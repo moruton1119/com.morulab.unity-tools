@@ -39,7 +39,8 @@ jobs:
 
       - name: Update VPM Repository
         run: |
-          vpm-get repo add-package package.json --repo-json index.json --url https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/com.moruton.blm-local-connector-${{ steps.version.outputs.VERSION }}.zip
+          # The command syntax has changed in recent vrc-get versions
+          vrc-get repo packages add package.json --repo-json index.json --url https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/com.moruton.blm-local-connector-${{ steps.version.outputs.VERSION }}.zip
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
