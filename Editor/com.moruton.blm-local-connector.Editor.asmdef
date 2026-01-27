@@ -1,0 +1,20 @@
+{
+    "name": "com.moruton.blm-local-connector.Editor",
+    "rootNamespace": "Moruton.BLMConnector.Editor",
+    "references": [
+        "com.moruton.blm-local-connector",
+        "com.moruton.gimmicks",
+        "com.moruton.gimmicks.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
