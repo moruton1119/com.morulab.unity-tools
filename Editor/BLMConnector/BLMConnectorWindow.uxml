@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:ue="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <ui:VisualElement class="root-container">
+        <!-- Header -->
+        <ui:VisualElement class="header">
+            <ui:Button name="hamburger-menu" class="hamburger-btn" text="≡" />
+            <ui:Label text="Morulab BLM Connector" class="title" />
+            <ui:VisualElement style="flex-grow: 1;" />
+            <ui:Button name="refresh-db" text="Refresh DB" />
+        </ui:VisualElement>
+
+        <!-- Main Content -->
+        <ui:VisualElement class="main-content">
+            <!-- Sidebar (Toggleable) -->
+            <ui:VisualElement name="sidebar" class="sidebar">
+                <ui:TextField name="search-field" placeholder-text="Search assets..." class="search-bar" />
+                <ui:Label text="FILTERS" class="filter-label" />
+                <ui:Toggle label="Avatars" value="true" />
+                <ui:Toggle label="Others" value="true" />
+            </ui:VisualElement>
+
+            <!-- Center Content (Grid + Bottom Panel) -->
+            <ui:VisualElement class="center-content">
+                <!-- Grid Content -->
+                <ui:ScrollView name="asset-scroll-view" class="asset-grid">
+                    <ui:VisualElement name="grid-container" class="grid-container" />
+                </ui:ScrollView>
+
+                <!-- Detail Panel (Bottom Aligned) -->
+                <ui:VisualElement name="detail-panel" class="detail-panel detail-panel-hidden">
+                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 5px;">
+                        <ui:Label name="detail-product-name" text="Product" style="-unity-font-style: bold; font-size: 14px;" />
+                        <ui:Button name="close-detail" text="×" />
+                    </ui:VisualElement>
+                    <ui:VisualElement style="flex-direction: row; align-items: center; background-color: rgba(0,0,0,0.2); border-radius: 3px; padding: 5px; margin-bottom: 10px;">
+                        <ui:Label name="detail-path" text="..." style="flex-grow: 1; font-size: 9px; opacity: 0.7; -unity-text-overflow-position: start;" />
+                        <ui:Button name="open-folder" text="📁" style="width: 25px; height: 18px; font-size: 10px; padding: 0;" />
+                    </ui:VisualElement>
+                    <ui:ScrollView name="package-list" style="flex-grow: 1;" />
+                    <ui:Button name="add-to-queue" text="Add to Queue" class="import-button" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Queue List Panel (Hidden by default) -->
+        <ui:VisualElement name="queue-list-panel" class="queue-list-panel detail-panel-hidden" style="position: absolute; bottom: 60px; right: 10px; width: 300px; height: 200px; background-color: #2a2a2a; border-width: 1px; border-color: #444; border-radius: 5px; padding: 5px;">
+            <ui:Label text="Import Queue" style="font-size: 12px; -unity-font-style: bold; margin-bottom: 5px;" />
+            <ui:ScrollView name="queue-list-scroll" />
+            <ui:Button name="close-queue-list" text="Close" style="height: 20px;" />
+        </ui:VisualElement>
+
+        <!-- Footer -->
+        <ui:VisualElement class="footer">
+            <ui:Label name="queue-status" text="Queue is empty" class="queue-status" style="color: #aaaaaa; font-size: 11px; margin-bottom: 5px;" />
+            <ui:Toggle name="interactive-toggle" label="Show Import Dialog" value="true" style="margin-bottom: 5px; color: #white;" />
+            <ui:VisualElement style="flex-direction: row; justify-content: flex-end; width: 100%;">
+                <ui:Button name="view-queue" text="View List" style="margin-right: 5px;" />
+                <ui:Button name="reset-queue" text="Clear Queue" style="margin-right: 5px;" />
+                <ui:Button name="process-queue" text="Process Queue (0)" class="import-button" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
