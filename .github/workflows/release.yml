@@ -40,31 +40,49 @@ jobs:
           import json, sys, os
           pkg_path = 'package.json'
           idx_path = 'index.json'
-          zip_url = 'https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/com.moruton.blm-local-connector-${{ steps.version.outputs.VERSION }}.zip'
+          tag_version = '${{ steps.version.outputs.VERSION }}'
+          repo_name = '${{ github.event.repository.name }}'
+          repo_url = f'https://moruton1119.github.io/{repo_name}/index.json'
+          zip_url = f'https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/com.moruton.blm-local-connector-{tag_version}.zip'
+          
+          print(f'Updating {idx_path} with version {tag_version}...')
           
           # Load package.json
           with open(pkg_path, 'r') as f: pkg = json.load(f)
+          
+          # Use tag version as the authoritative version for this release
+          pkg['version'] = tag_version
           
           # Load or create index.json
           if os.path.exists(idx_path):
               with open(idx_path, 'r') as f: idx = json.load(f)
           else:
-              idx = {'name': 'Morulab VPM Repository', 'author': 'moruton1119', 'url': 'https://moruton1119.github.io/${{ github.event.repository.name }}/index.json', 'packages': {}}
+              idx = {}
+
+          # Ensure base metadata
+          idx.setdefault('name', 'Moruton Laboratory')
+          idx.setdefault('author', 'moruton1119')
+          idx['id'] = repo_url # VCC often uses URL as ID
+          idx['url'] = repo_url
+          if 'packages' not in idx: idx['packages'] = {}
           
           name = pkg['name']
-          version = pkg['version']
           
           # Ensure package structure exists
           if name not in idx['packages']:
               idx['packages'][name] = {'versions': {}}
           
           # Add/Update version
-          idx['packages'][name]['versions'][version] = pkg
-          idx['packages'][name]['versions'][version]['url'] = zip_url
+          pkg['url'] = zip_url
+          idx['packages'][name]['versions'][tag_version] = pkg
+          
+          print(f'Adding package {name} version {tag_version}')
           
           # Save updated index.json
           with open(idx_path, 'w') as f:
               json.dump(idx, f, indent=4)
+          
+          print('Successfully updated index.json')
           "
 
       - name: Deploy to GitHub Pages
