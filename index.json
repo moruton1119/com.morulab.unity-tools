@@ -6,28 +6,6 @@
     "packages": {
         "com.moruton.blm-local-connector": {
             "versions": {
-                "0.1.3": {
-                    "name": "com.moruton.blm-local-connector",
-                    "version": "0.1.3",
-                    "displayName": "BLM Local Connector",
-                    "description": "Local connector for BLM systems.",
-                    "unity": "2019.4",
-                    "vpmDependencies": {
-                        "com.moruton.gimmicks": "^0.1.7"
-                    },
-                    "url": "https://github.com/moruton1119/com.BLM_Local_Connector/releases/download/v0.1.3/com.moruton.blm-local-connector-0.1.3.zip"
-                },
-                "0.1.2": {
-                    "name": "com.moruton.blm-local-connector",
-                    "version": "0.1.2",
-                    "displayName": "BLM Local Connector",
-                    "description": "Local connector for BLM systems.",
-                    "unity": "2019.4",
-                    "vpmDependencies": {
-                        "com.moruton.gimmicks": "0.1.7"
-                    },
-                    "url": "https://github.com/moruton1119/com.BLM_Local_Connector/releases/download/v0.1.2/com.moruton.blm-local-connector-0.1.2.zip"
-                },
                 "0.1.0": {
                     "name": "com.moruton.blm-local-connector",
                     "version": "0.1.0",
