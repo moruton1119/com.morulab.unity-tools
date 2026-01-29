@@ -133,8 +133,30 @@ namespace Moruton.BLMConnector
                         // BLOB型の場合はbyte[]としてデコード
                         if (result is byte[] bytes)
                         {
+                            Debug.Log($"[BLM Debug] BLOB byte length: {bytes.Length}");
+                            Debug.Log($"[BLM Debug] BLOB hex: {BitConverter.ToString(bytes)}");
+                            
+                            // UTF-8でデコード
                             path = System.Text.Encoding.UTF8.GetString(bytes);
-                            Debug.Log($"[BLM Debug] Found item_directory_path (BLOB): {path}");
+                            Debug.Log($"[BLM Debug] UTF-8 decoded: {path}");
+                            
+                            // もしUTF-8で正しく取得できない場合、UTF-16を試す
+                            if (string.IsNullOrEmpty(path) || path.Length < 3)
+                            {
+                                path = System.Text.Encoding.Unicode.GetString(bytes);
+                                Debug.Log($"[BLM Debug] UTF-16 decoded: {path}");
+                            }
+                            
+                            // それでもダメならShift-JIS
+                            if (string.IsNullOrEmpty(path) || path.Length < 3)
+                            {
+                                try
+                                {
+                                    path = System.Text.Encoding.GetEncoding("Shift_JIS").GetString(bytes);
+                                    Debug.Log($"[BLM Debug] Shift-JIS decoded: {path}");
+                                }
+                                catch { }
+                            }
                         }
                         else
                         {
