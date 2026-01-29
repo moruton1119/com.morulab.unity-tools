@@ -124,14 +124,38 @@ namespace Moruton.BLMConnector
                 {
                     cmd.CommandText = "SELECT value FROM preferences WHERE key = 'library_root'";
                     var result = cmd.ExecuteScalar();
-                    if (result != null) return result.ToString();
+                    if (result != null) 
+                    {
+                        var path = result.ToString();
+                        Debug.Log($"[BLM Debug] Found library_root in preferences: {path}");
+                        return path;
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[BLM Debug] 'library_root' key not found in preferences.");
+                    }
 
                     cmd.CommandText = "SELECT value FROM preferences WHERE key = 'item_directory_path'";
                     result = cmd.ExecuteScalar();
-                    return result?.ToString();
+                    if (result != null)
+                    {
+                        var path = result.ToString();
+                        Debug.Log($"[BLM Debug] Found item_directory_path fallback: {path}");
+                        return path;
+                    }
+                    else
+                    {
+                         Debug.LogWarning("[BLM Debug] 'item_directory_path' fallback key also not found.");
+                    }
+                    
+                    return null;
                 }
             }
-            catch { return null; }
+            catch (Exception ex)
+            { 
+                Debug.LogError($"[BLM Debug] Error reading preferences: {ex.Message}");
+                return null; 
+            }
         }
 #endif
 
@@ -185,7 +209,7 @@ namespace Moruton.BLMConnector
         private static bool IsMatch(string path, string id, List<string> keywords, string shop)
         {
             string name = Path.GetFileName(path);
-            if (name.Contains(id)) return true; 
+            if (name.Contains(id)) return true;
             if (!string.IsNullOrEmpty(shop) && name.IndexOf(shop, StringComparison.OrdinalIgnoreCase) >= 0) return true;
             foreach (var kw in keywords) if (name.IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0) return true;
             return false;
