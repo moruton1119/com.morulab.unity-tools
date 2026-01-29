@@ -6,17 +6,17 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.IO;
 using UnityEngine.Networking;
-using MorulabTools.Launcher;
+// using MorulabTools.Launcher;
 
 namespace Moruton.BLMConnector
 {
     public class BLMConnectorWindow : EditorWindow
     {
         [MenuItem("Morulab/BLM Connector (Standalone)")]
-        [MorulabTools.Launcher.MenuDescription("Booth Library Manager Connector (Standalone). Manage and import assets from your local library.", "Import & Export")]
-        [MorulabTools.Launcher.ToolLocalize("en", "BLM Connector (Standalone)", "Manage and import assets from your local library.", "Import & Export")]
-        [MorulabTools.Launcher.ToolLocalize("ja", "BLM Connector (単独版)", "ローカルのBOOTHライブラリを管理し、アセットを一括インポートします。", "インポート・エクスポート")]
-        [MorulabTools.Launcher.ToolLocalize("ko", "BLM Connector (Standalone)", "로컬 BOOTH 라이브러리를 관리하고 에셋을 일괄 가져오기 합니다.", "가져오기 및 내보내기")]
+        // [MorulabTools.Launcher.MenuDescription("Booth Library Manager Connector (Standalone). Manage and import assets from your local library.", "Import & Export")]
+        // [MorulabTools.Launcher.ToolLocalize("en", "BLM Connector (Standalone)", "Manage and import assets from your local library.", "Import & Export")]
+        // [MorulabTools.Launcher.ToolLocalize("ja", "BLM Connector (単独版)", "ローカルのBOOTHライブラリを管理し、アセットを一括インポートします。", "インポート・エクスポート")]
+        // [MorulabTools.Launcher.ToolLocalize("ko", "BLM Connector (Standalone)", "로컬 BOOTH 라이브러리를 관리하고 에셋을 일괄 가져오기 합니다.", "가져오기 및 내보내기")]
         public static void ShowWindow()
         {
             var window = GetWindow<BLMConnectorWindow>();

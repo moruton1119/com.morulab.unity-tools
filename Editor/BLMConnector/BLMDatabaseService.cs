@@ -50,8 +50,10 @@ namespace Moruton.BLMConnector
                         // Fallback logic if needed
                     }
 
-                    // Fallback hardcoded path if still empty
-                    if (string.IsNullOrEmpty(currentLibraryRoot)) currentLibraryRoot = @"E:\moruton\b6571299"; 
+                    if (string.IsNullOrEmpty(currentLibraryRoot))
+                    {
+                        Debug.LogWarning("[BLM Standalone] Could not find library root in database preferences.");
+                    }
 
                     Debug.Log($"[BLM Standalone] Library Root: {currentLibraryRoot}");
 
