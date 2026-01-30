@@ -14,6 +14,7 @@ namespace Moruton.BLMConnector
         public string thumbnailUrl;
         public string rootFolderPath;
         public string shopSubdomain;
+        public string sourceType; // "BLM" or "Local"
 
         public List<BoothPackage> packages = new List<BoothPackage>();
         public List<BoothAsset> assets = new List<BoothAsset>();

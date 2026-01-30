@@ -80,7 +80,8 @@ namespace Moruton.BLMConnector
                                     name = reader["name"].ToString(),
                                     shopName = reader["shop_name"] != DBNull.Value ? reader["shop_name"].ToString() : "Unknown",
                                     shopSubdomain = reader["shop_subdomain"] != DBNull.Value ? reader["shop_subdomain"].ToString() : "",
-                                    thumbnailUrl = reader["thumbnail_url"] != DBNull.Value ? reader["thumbnail_url"].ToString() : ""
+                                    thumbnailUrl = reader["thumbnail_url"] != DBNull.Value ? reader["thumbnail_url"].ToString() : "",
+                                    sourceType = "BLM"
                                 };
                                 
                                 // BLMのフォルダ構造: {libraryRoot}\b{id}

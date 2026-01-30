@@ -55,6 +55,8 @@ namespace Moruton.BLMConnector
         private List<BoothProduct> allProducts = new List<BoothProduct>();
         private BoothProduct selectedProduct;
         private List<string> selectedPackagePaths = new List<string>();
+        private Toggle filterBLMToggle;
+        private Toggle filterOthersToggle;
 
         public VisualElement CreateUI()
         {
@@ -82,6 +84,7 @@ namespace Moruton.BLMConnector
             BindButton("view-queue", ShowQueueList);
             BindButton("reset-queue", () => { AssetImportQueue.ClearQueue(); UpdateQueueStatus(); });
             BindButton("close-queue-list", () => root.Q<VisualElement>("queue-list-panel")?.AddToClassList("detail-panel-hidden"));
+            BindButton("open-local-assets", OpenLocalAssetsFolder);
 
             var hamburger = root.Q<Button>("hamburger-menu");
             var sidebar = root.Q<VisualElement>("sidebar");
@@ -95,6 +98,18 @@ namespace Moruton.BLMConnector
             {
                 toggle.value = AssetImportQueue.InteractiveMode;
                 toggle.RegisterValueChangedCallback(evt => AssetImportQueue.InteractiveMode = evt.newValue);
+            }
+
+            // Setup filter toggles
+            filterBLMToggle = root.Q<Toggle>("filter-blm");
+            filterOthersToggle = root.Q<Toggle>("filter-others");
+            if (filterBLMToggle != null)
+            {
+                filterBLMToggle.RegisterValueChangedCallback(evt => ApplyFilters());
+            }
+            if (filterOthersToggle != null)
+            {
+                filterOthersToggle.RegisterValueChangedCallback(evt => ApplyFilters());
             }
 
             root.RegisterCallback<AttachToPanelEvent>(OnAttach);
@@ -159,9 +174,94 @@ namespace Moruton.BLMConnector
         private void RefreshData()
         {
             BLMHistory.Refresh();
+
+            // Load BLM products from database
             string dbPath = BLMDatabaseService.GetDefaultDbPath();
-            allProducts = BLMDatabaseService.LoadProducts(dbPath);
-            RebuildGrid(allProducts);
+            var blmProducts = BLMDatabaseService.LoadProducts(dbPath);
+
+            // Load Local products from LocalAssets folder
+            var localProducts = new List<BoothProduct>();
+            if (!string.IsNullOrEmpty(BLMDatabaseService.LibraryRoot))
+            {
+                // Auto-create LocalAssets folder if it doesn't exist
+                EnsureLocalAssetsFolderExists();
+                localProducts = LocalAssetService.LoadLocalAssets(BLMDatabaseService.LibraryRoot);
+            }
+
+            // Merge both sources
+            allProducts = new List<BoothProduct>();
+            allProducts.AddRange(blmProducts);
+            allProducts.AddRange(localProducts);
+
+            Debug.Log($"[BLM Standalone] Loaded {blmProducts.Count} BLM products + {localProducts.Count} local products = {allProducts.Count} total");
+
+            ApplyFilters();
+        }
+
+        private void EnsureLocalAssetsFolderExists()
+        {
+            if (string.IsNullOrEmpty(BLMDatabaseService.LibraryRoot)) return;
+
+            string localAssetsPath = Path.Combine(BLMDatabaseService.LibraryRoot, "LocalAssets");
+            if (!Directory.Exists(localAssetsPath))
+            {
+                try
+                {
+                    Directory.CreateDirectory(localAssetsPath);
+                    Debug.Log($"[BLM Standalone] Created LocalAssets folder at: {localAssetsPath}");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[BLM Standalone] Failed to create LocalAssets folder: {ex.Message}");
+                }
+            }
+        }
+
+        private void OpenLocalAssetsFolder()
+        {
+            if (string.IsNullOrEmpty(BLMDatabaseService.LibraryRoot))
+            {
+                EditorUtility.DisplayDialog("Error", "BLM Library Root not found. Please ensure BOOTH Library Manager is configured.", "OK");
+                return;
+            }
+
+            string localAssetsPath = Path.Combine(BLMDatabaseService.LibraryRoot, "LocalAssets");
+
+            // Create folder if it doesn't exist
+            if (!Directory.Exists(localAssetsPath))
+            {
+                try
+                {
+                    Directory.CreateDirectory(localAssetsPath);
+                    Debug.Log($"[BLM Standalone] Created LocalAssets folder at: {localAssetsPath}");
+                }
+                catch (Exception ex)
+                {
+                    EditorUtility.DisplayDialog("Error", $"Failed to create LocalAssets folder: {ex.Message}", "OK");
+                    return;
+                }
+            }
+
+            // Open in file explorer
+            EditorUtility.RevealInFinder(localAssetsPath);
+            Debug.Log($"[BLM Standalone] Opened LocalAssets folder: {localAssetsPath}");
+        }
+
+        private void ApplyFilters()
+        {
+            bool showBLM = filterBLMToggle?.value ?? true;
+            bool showOthers = filterOthersToggle?.value ?? true;
+
+            var filtered = allProducts.Where(p =>
+            {
+                if (p.sourceType == "BLM" && !showBLM) return false;
+                if (p.sourceType == "Local" && !showOthers) return false;
+                return true;
+            }).ToList();
+
+            Debug.Log($"[BLM Standalone] Filtered: {filtered.Count}/{allProducts.Count} products (BLM: {showBLM}, Others: {showOthers})");
+
+            RebuildGrid(filtered);
         }
 
         private void RebuildGrid(List<BoothProduct> products)
