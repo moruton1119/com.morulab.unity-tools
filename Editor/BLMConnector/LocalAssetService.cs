@@ -14,7 +14,7 @@ namespace Moruton.BLMConnector
         public static List<BoothProduct> LoadLocalAssets(string libraryRoot)
         {
             var products = new List<BoothProduct>();
-            
+
             if (string.IsNullOrEmpty(libraryRoot))
             {
                 Debug.LogWarning("[BLM Standalone] Library root is null or empty. Cannot load local assets.");
@@ -22,7 +22,7 @@ namespace Moruton.BLMConnector
             }
 
             string localAssetsPath = Path.Combine(libraryRoot, "LocalAssets");
-            
+
             if (!Directory.Exists(localAssetsPath))
             {
                 Debug.Log($"[BLM Standalone] LocalAssets folder not found at: {localAssetsPath}");
@@ -42,7 +42,9 @@ namespace Moruton.BLMConnector
                         name = Path.GetFileName(folder),
                         shopName = "Local",
                         rootFolderPath = folder,
-                        sourceType = "Local"
+                        sourceType = "Local",
+                        packages = new List<BoothPackage>(),
+                        assets = new List<BoothAsset>()
                     };
 
                     // Find ANY image file in root as thumbnail
@@ -62,10 +64,19 @@ namespace Moruton.BLMConnector
                     var packages = Directory.GetFiles(folder, "*.unitypackage", SearchOption.TopDirectoryOnly);
                     foreach (var pkg in packages)
                     {
+                        // Add to packages list (for compatibility)
                         product.packages.Add(new BoothPackage
                         {
                             fileName = Path.GetFileName(pkg),
                             fullPath = pkg
+                        });
+
+                        // Add to assets list (for detail panel display)
+                        product.assets.Add(new BoothAsset
+                        {
+                            fileName = Path.GetFileName(pkg),
+                            fullPath = pkg,
+                            assetType = AssetType.UnityPackage
                         });
                     }
 
