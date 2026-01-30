@@ -235,6 +235,146 @@ namespace Moruton.BLMConnector
             }
         }
 
+        private void ShowDetail(BoothProduct product)
+        {
+            // 詳細パネルを表示
+            var detailPanel = root.Q<VisualElement>("detail-panel");
+            if (detailPanel == null) return;
+
+            detailPanel.Clear();
+            detailPanel.RemoveFromClassList("detail-panel-hidden");
+
+            // ヘッダー
+            var header = new VisualElement();
+            header.style.flexDirection = FlexDirection.Row;
+            header.style.justifyContent = Justify.SpaceBetween;
+            header.style.marginBottom = 10;
+
+            var titleLabel = new Label(product.name);
+            titleLabel.style.fontSize = 16;
+            titleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+
+            var closeBtn = new Button(() => detailPanel.AddToClassList("detail-panel-hidden")) { text = "×" };
+            closeBtn.style.width = 30;
+            closeBtn.style.height = 30;
+
+            header.Add(titleLabel);
+            header.Add(closeBtn);
+            detailPanel.Add(header);
+
+            var shopLabel = new Label($"Shop: {product.shopName}");
+            shopLabel.style.color = new Color(0.7f, 0.7f, 0.7f);
+            shopLabel.style.marginBottom = 15;
+            detailPanel.Add(shopLabel);
+
+            // アセットをタイプごとにグループ化
+            var unityPackages = product.assets.Where(a => a.assetType == AssetType.UnityPackage).ToList();
+            var textures = product.assets.Where(a => a.assetType == AssetType.Texture).ToList();
+            var models = product.assets.Where(a => a.assetType == AssetType.Model).ToList();
+            var audio = product.assets.Where(a => a.assetType == AssetType.Audio).ToList();
+            var others = product.assets.Where(a => a.assetType == AssetType.Other).ToList();
+
+            // UnityPackage ゾーン
+            if (unityPackages.Count > 0)
+            {
+                AddAssetZone(detailPanel, "UnityPackages", unityPackages, product);
+            }
+
+            // Textures ゾーン
+            if (textures.Count > 0)
+            {
+                AddAssetZone(detailPanel, "Textures", textures, product);
+            }
+
+            // Models ゾーン
+            if (models.Count > 0)
+            {
+                AddAssetZone(detailPanel, "Models", models, product);
+            }
+
+            // Audio ゾーン
+            if (audio.Count > 0)
+            {
+                AddAssetZone(detailPanel, "Audio", audio, product);
+            }
+
+            // Others ゾーン
+            if (others.Count > 0)
+            {
+                AddAssetZone(detailPanel, "Other Files", others, product);
+            }
+        }
+
+        private void AddAssetZone(VisualElement parent, string zoneName, List<BoothAsset> assets, BoothProduct product)
+        {
+            var zone = new VisualElement();
+            zone.style.marginBottom = 15;
+            zone.style.paddingBottom = 10;
+            zone.style.paddingTop = 10;
+            zone.style.paddingLeft = 10;
+            zone.style.paddingRight = 10;
+            zone.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f, 0.3f);
+            zone.style.borderBottomLeftRadius = 5;
+            zone.style.borderBottomRightRadius = 5;
+            zone.style.borderTopLeftRadius = 5;
+            zone.style.borderTopRightRadius = 5;
+
+            var zoneHeader = new Label($"─ {zoneName} ({assets.Count}) ─");
+            zoneHeader.style.unityFontStyleAndWeight = FontStyle.Bold;
+            zoneHeader.style.marginBottom = 8;
+            zone.Add(zoneHeader);
+
+            foreach (var asset in assets)
+            {
+                var assetRow = new VisualElement();
+                assetRow.style.flexDirection = FlexDirection.Row;
+                assetRow.style.justifyContent = Justify.SpaceBetween;
+                assetRow.style.marginBottom = 5;
+                assetRow.style.paddingLeft = 10;
+
+                var assetLabel = new Label($"○ {asset.fileName}");
+                assetLabel.style.flexGrow = 1;
+
+                var importBtn = new Button(() => ImportAsset(asset, product)) { text = "Import" };
+                importBtn.style.width = 80;
+
+                assetRow.Add(assetLabel);
+                assetRow.Add(importBtn);
+                zone.Add(assetRow);
+            }
+
+            // Import All ボタン
+            if (assets.Count > 1)
+            {
+                var importAllBtn = new Button(() => ImportAllAssets(assets, product)) { text = $"Import All {zoneName}" };
+                importAllBtn.style.marginTop = 8;
+                zone.Add(importAllBtn);
+            }
+
+            parent.Add(zone);
+        }
+
+        private void ImportAsset(BoothAsset asset, BoothProduct product)
+        {
+            try
+            {
+                BLMAssetImporter.ImportAsset(asset, product.name);
+                Debug.Log($"[BLM] Successfully imported {asset.fileName}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[BLM] Failed to import {asset.fileName}: {ex.Message}");
+            }
+        }
+
+        private void ImportAllAssets(List<BoothAsset> assets, BoothProduct product)
+        {
+            foreach (var asset in assets)
+            {
+                ImportAsset(asset, product);
+            }
+        }
+
         private void LoadThumbnail(Image img, BoothProduct product)
         {
             if (!string.IsNullOrEmpty(product.thumbnailPath) && File.Exists(product.thumbnailPath))

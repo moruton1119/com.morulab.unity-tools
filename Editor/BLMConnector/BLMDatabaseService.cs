@@ -83,7 +83,8 @@ namespace Moruton.BLMConnector
                                     thumbnailUrl = reader["thumbnail_url"] != DBNull.Value ? reader["thumbnail_url"].ToString() : ""
                                 };
                                 
-                                string productPath = Path.Combine(currentLibraryRoot, p.shopSubdomain, p.id);
+                                // BLMのフォルダ構造: {libraryRoot}\b{id}
+                                string productPath = Path.Combine(currentLibraryRoot, $"b{p.id}");
 
                                 if (!Directory.Exists(productPath))
                                 {
@@ -99,6 +100,9 @@ namespace Moruton.BLMConnector
                                 string jpg = Path.Combine(cacheDir, $"{p.id}.jpg");
                                 if (File.Exists(png)) p.thumbnailPath = png;
                                 else if (File.Exists(jpg)) p.thumbnailPath = jpg;
+
+                                // アセットを読み込む
+                                p.assets = FindProductAssets(p.id, productPath);
 
                                 products.Add(p);
                             }
@@ -136,26 +140,15 @@ namespace Moruton.BLMConnector
                             Debug.Log($"[BLM Debug] BLOB byte length: {bytes.Length}");
                             Debug.Log($"[BLM Debug] BLOB hex: {BitConverter.ToString(bytes)}");
                             
-                            // UTF-8でデコード
-                            path = System.Text.Encoding.UTF8.GetString(bytes);
-                            Debug.Log($"[BLM Debug] UTF-8 decoded: {path}");
+                            // UTF-16 LE (Little Endian) でデコード - BLMはこの形式を使用
+                            path = System.Text.Encoding.Unicode.GetString(bytes);
+                            Debug.Log($"[BLM Debug] UTF-16 decoded: {path}");
                             
-                            // もしUTF-8で正しく取得できない場合、UTF-16を試す
+                            // もしUTF-16で正しく取得できない場合、UTF-8を試す
                             if (string.IsNullOrEmpty(path) || path.Length < 3)
                             {
-                                path = System.Text.Encoding.Unicode.GetString(bytes);
-                                Debug.Log($"[BLM Debug] UTF-16 decoded: {path}");
-                            }
-                            
-                            // それでもダメならShift-JIS
-                            if (string.IsNullOrEmpty(path) || path.Length < 3)
-                            {
-                                try
-                                {
-                                    path = System.Text.Encoding.GetEncoding("Shift_JIS").GetString(bytes);
-                                    Debug.Log($"[BLM Debug] Shift-JIS decoded: {path}");
-                                }
-                                catch { }
+                                path = System.Text.Encoding.UTF8.GetString(bytes);
+                                Debug.Log($"[BLM Debug] UTF-8 decoded: {path}");
                             }
                         }
                         else
@@ -250,6 +243,56 @@ namespace Moruton.BLMConnector
                 }
             }
             return packages;
+        }
+
+        public static List<BoothAsset> FindProductAssets(string productId, string rootPath)
+        {
+            var assets = new List<BoothAsset>();
+            if (!string.IsNullOrEmpty(rootPath) && Directory.Exists(rootPath))
+            {
+                // サポートする拡張子
+                string[] extensions = {
+                    "*.unitypackage",
+                    "*.png", "*.jpg", "*.jpeg", "*.tga", "*.psd",
+                    "*.fbx", "*.obj", "*.blend",
+                    "*.wav", "*.mp3", "*.ogg"
+                };
+
+                foreach (var ext in extensions)
+                {
+                    var files = Directory.GetFiles(rootPath, ext, SearchOption.AllDirectories);
+                    foreach (var file in files)
+                    {
+                        assets.Add(new BoothAsset
+                        {
+                            fileName = Path.GetFileName(file),
+                            fullPath = file,
+                            assetType = GetAssetType(Path.GetExtension(file))
+                        });
+                    }
+                }
+            }
+            return assets;
+        }
+
+        private static AssetType GetAssetType(string extension)
+        {
+            switch (extension.ToLower())
+            {
+                case ".unitypackage": return AssetType.UnityPackage;
+                case ".png":
+                case ".jpg":
+                case ".jpeg":
+                case ".tga":
+                case ".psd": return AssetType.Texture;
+                case ".fbx":
+                case ".obj":
+                case ".blend": return AssetType.Model;
+                case ".wav":
+                case ".mp3":
+                case ".ogg": return AssetType.Audio;
+                default: return AssetType.Other;
+            }
         }
     }
 }
