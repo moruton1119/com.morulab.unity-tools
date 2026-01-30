@@ -235,12 +235,64 @@ namespace Moruton.BLMConnector
             }
         }
 
+        private void LoadThumbnail(Image img, BoothProduct product)
+        {
+            if (!string.IsNullOrEmpty(product.thumbnailPath) && File.Exists(product.thumbnailPath))
+            {
+                try
+                {
+                    var tex = new Texture2D(2, 2);
+                    tex.LoadImage(File.ReadAllBytes(product.thumbnailPath));
+                    img.image = tex;
+                    return;
+                }
+                catch { }
+            }
+
+            string cacheDir = "Library/Moruton.BLMConnector/Thumbnails";
+            if (!Directory.Exists(cacheDir)) Directory.CreateDirectory(cacheDir);
+
+            string cachePath = $"{cacheDir}/{product.id}.png";
+            if (File.Exists(cachePath))
+            {
+                img.image = AssetDatabase.LoadAssetAtPath<Texture2D>(cachePath);
+                if (img.image != null) return;
+            }
+
+            if (!string.IsNullOrEmpty(product.thumbnailUrl))
+            {
+                DownloadThumbnail(img, product.thumbnailUrl, cachePath);
+            }
+        }
+
+        private void DownloadThumbnail(Image img, string url, string savePath)
+        {
+            var request = UnityWebRequestTexture.GetTexture(url);
+            var op = request.SendWebRequest();
+            op.completed += _ =>
+            {
+                if (request == null) return;
+                try
+                {
+                    if (img != null && request.result == UnityWebRequest.Result.Success)
+                    {
+                        var tex = DownloadHandlerTexture.GetContent(request);
+                        if (tex != null)
+                        {
+                            img.image = tex;
+                            try { File.WriteAllBytes(savePath, tex.EncodeToPNG()); } catch { }
+                        }
+                    }
+                }
+                finally { request.Dispose(); }
+            };
+        }
+
         private void ShowDetail(BoothProduct product)
         {
-            // 詳細パネルを表示
-            var detailPanel = root.Q<VisualElement>("detail-panel");
             if (detailPanel == null) return;
-
+            selectedProduct = product;
+            selectedPackagePaths.Clear();
             detailPanel.Clear();
             detailPanel.RemoveFromClassList("detail-panel-hidden");
 
@@ -372,108 +424,6 @@ namespace Moruton.BLMConnector
             foreach (var asset in assets)
             {
                 ImportAsset(asset, product);
-            }
-        }
-
-        private void LoadThumbnail(Image img, BoothProduct product)
-        {
-            if (!string.IsNullOrEmpty(product.thumbnailPath) && File.Exists(product.thumbnailPath))
-            {
-                try
-                {
-                    var tex = new Texture2D(2, 2);
-                    tex.LoadImage(File.ReadAllBytes(product.thumbnailPath));
-                    img.image = tex;
-                    return;
-                }
-                catch { }
-            }
-
-            string cacheDir = "Library/Moruton.BLMConnector/Thumbnails";
-            if (!Directory.Exists(cacheDir)) Directory.CreateDirectory(cacheDir);
-
-            string cachePath = $"{cacheDir}/{product.id}.png";
-            if (File.Exists(cachePath))
-            {
-                img.image = AssetDatabase.LoadAssetAtPath<Texture2D>(cachePath);
-                if (img.image != null) return;
-            }
-
-            if (!string.IsNullOrEmpty(product.thumbnailUrl))
-            {
-                DownloadThumbnail(img, product.thumbnailUrl, cachePath);
-            }
-        }
-
-        private void DownloadThumbnail(Image img, string url, string savePath)
-        {
-            var request = UnityWebRequestTexture.GetTexture(url);
-            var op = request.SendWebRequest();
-            op.completed += _ =>
-            {
-                if (request == null) return;
-                try
-                {
-                    if (img != null && request.result == UnityWebRequest.Result.Success)
-                    {
-                        var tex = DownloadHandlerTexture.GetContent(request);
-                        if (tex != null)
-                        {
-                            img.image = tex;
-                            try { File.WriteAllBytes(savePath, tex.EncodeToPNG()); } catch { }
-                        }
-                    }
-                }
-                finally { request.Dispose(); }
-            };
-        }
-
-        private void ShowDetail(BoothProduct product)
-        {
-            if (detailPanel == null) return;
-            selectedProduct = product;
-            selectedPackagePaths.Clear();
-            detailPanel.RemoveFromClassList("detail-panel-hidden");
-
-            var nameLbl = detailPanel.Q<Label>("detail-product-name");
-            if (nameLbl != null) nameLbl.text = product.name;
-
-            var pathLbl = detailPanel.Q<Label>("detail-path");
-            if (pathLbl != null) pathLbl.text = product.rootFolderPath;
-
-            product.packages = BLMDatabaseService.FindProductPackages(product.id, product.rootFolderPath);
-
-            var list = detailPanel.Q<ScrollView>("package-list");
-            if (list == null) return;
-            list.Clear();
-
-            if (product.packages.Count == 0)
-            {
-                list.Add(new Label("No .unitypackage files found."));
-            }
-            else
-            {
-                foreach (var pkg in product.packages)
-                {
-                    var row = new VisualElement();
-                    row.style.flexDirection = FlexDirection.Row;
-                    row.style.alignItems = Align.Center;
-                    row.AddToClassList("package-list-item");
-
-                    var toggle = new Toggle();
-                    toggle.RegisterValueChangedCallback(evt =>
-                    {
-                        if (evt.newValue) selectedPackagePaths.Add(pkg.fullPath);
-                        else selectedPackagePaths.Remove(pkg.fullPath);
-                    });
-                    row.Add(toggle);
-
-                    var label = new Label(pkg.fileName);
-                    label.style.flexGrow = 1;
-                    row.Add(label);
-
-                    list.Add(row);
-                }
             }
         }
 
