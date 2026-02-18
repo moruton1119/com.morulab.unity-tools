@@ -1,62 +1,18 @@
 {
-    "name": "Moruton Laboratory",
-    "author": "Moruton",
-    "url": "https://moruton1119.github.io/com.BLM_Local_Connector/index.json",
-    "id": "https://moruton1119.github.io/com.BLM_Local_Connector/index.json",
+    "name": "Morulab Unity Tools",
+    "author": "Morulab",
+    "url": "https://moruton1119.github.io/com.morulab.unity-tools/index.json",
+    "id": "https://moruton1119.github.io/com.morulab.unity-tools/index.json",
     "packages": {
-        "com.moruton.blm-local-connector": {
+        "com.morulab.unity-tools": {
             "versions": {
                 "0.4.0": {
-                    "name": "com.moruton.blm-local-connector",
+                    "name": "com.morulab.unity-tools",
                     "version": "0.4.0",
-                    "displayName": "BLM Local Connector",
+                    "displayName": "Morulab Unity Tools",
                     "description": "Morulab Launcher Hub with BLM Connector tool.",
                     "unity": "2019.4",
-                    "url": "https://github.com/moruton1119/com.BLM_Local_Connector/releases/download/v0.4.0/com.moruton.blm-local-connector-0.4.0.zip"
-                },
-                "0.3.1": {
-                    "name": "com.moruton.blm-local-connector",
-                    "version": "0.3.1",
-                    "displayName": "BLM Local Connector",
-                    "description": "Local connector for BLM systems.",
-                    "unity": "2019.4",
-                    "vpmDependencies": {
-                        "com.moruton.gimmicks": "^0.1.7"
-                    },
-                    "url": "https://github.com/moruton1119/com.BLM_Local_Connector/releases/download/v0.3.1/com.moruton.blm-local-connector-0.3.1.zip"
-                },
-                "0.3.0": {
-                    "name": "com.moruton.blm-local-connector",
-                    "version": "0.3.0",
-                    "displayName": "BLM Local Connector",
-                    "description": "Local connector for BLM systems.",
-                    "unity": "2019.4",
-                    "vpmDependencies": {
-                        "com.moruton.gimmicks": "^0.1.7"
-                    },
-                    "url": "https://github.com/moruton1119/com.BLM_Local_Connector/releases/download/v0.3.0/com.moruton.blm-local-connector-0.3.0.zip"
-                },
-                "0.1.5": {
-                    "name": "com.moruton.blm-local-connector",
-                    "version": "0.1.5",
-                    "displayName": "BLM Local Connector",
-                    "description": "Local connector for BLM systems.",
-                    "unity": "2019.4",
-                    "vpmDependencies": {
-                        "com.moruton.gimmicks": "^0.1.7"
-                    },
-                    "url": "https://github.com/moruton1119/com.BLM_Local_Connector/releases/download/v0.1.5/com.moruton.blm-local-connector-0.1.5.zip"
-                },
-                "0.1.0": {
-                    "name": "com.moruton.blm-local-connector",
-                    "version": "0.1.0",
-                    "displayName": "BLM Local Connector",
-                    "description": "Local connector for BLM systems.",
-                    "unity": "2019.4",
-                    "vpmDependencies": {
-                        "com.moruton.gimmicks": "0.1.6"
-                    },
-                    "url": "https://github.com/moruton1119/com.BLM_Local_Connector/releases/download/v0.1.0/com.moruton.blm-local-connector-0.1.0.zip"
+                    "url": "https://github.com/moruton1119/com.morulab.unity-tools/releases/download/v0.4.0/com.morulab.unity-tools-0.4.0.zip"
                 }
             }
         }

@@ -23,12 +23,12 @@ jobs:
 
       - name: Pack Package
         run: |
-          zip -r "com.moruton.blm-local-connector-${{ steps.version.outputs.VERSION }}.zip" . -x ".git/*" ".github/*" ".vscode/*" "Tests/*" "obj/*"
+          zip -r "com.morulab.unity-tools-${{ steps.version.outputs.VERSION }}.zip" . -x ".git/*" ".github/*" ".vscode/*" "Tests/*" "obj/*"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: "com.moruton.blm-local-connector-${{ steps.version.outputs.VERSION }}.zip"
+          files: "com.morulab.unity-tools-${{ steps.version.outputs.VERSION }}.zip"
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           draft: false
@@ -43,7 +43,7 @@ jobs:
           tag_version = '${{ steps.version.outputs.VERSION }}'
           repo_name = '${{ github.event.repository.name }}'
           repo_url = f'https://moruton1119.github.io/{repo_name}/index.json'
-          zip_url = f'https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/com.moruton.blm-local-connector-{tag_version}.zip'
+          zip_url = f'https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/com.morulab.unity-tools-{tag_version}.zip'
           
           print(f'Updating {idx_path} with version {tag_version}...')
           

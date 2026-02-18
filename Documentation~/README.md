@@ -1,9 +1,18 @@
-# BLM Local Connector
+# Morulab Unity Tools
 
-BOOTH Library Manager (BLM) のローカルライブラリからUnityにアセットをインポートするためのUnity Editorパッケージ。
+Morulab製Unityツール集。ランチャーシステム + BLM Local Connector（BOOTH Library Manager連携ツール）を含みます。
+
+## VCCへの追加
+
+以下のURLをVCCの「Add Repository」に追加してください：
+
+```
+https://moruton1119.github.io/com.morulab.unity-tools/index.json
+```
 
 ## 主な機能
 
+- **Morulab Launcher**: ツール統合管理ランチャー（多言語対応: EN/JA/KO）
 - **BLMデータベース連携**: BLMのSQLiteデータベースから商品情報を読み込み
 - **ローカルアセット対応**: `LocalAssets/`フォルダで自作アセットも管理
 - **一括インポート**: キューシステムによる複数アセットの一括インポート
@@ -179,25 +188,29 @@ classDiagram
 
 ## 使用方法
 
-### 1. ウィンドウを開く
+### 1. ランチャーを開く
 
-Unityメニューから `Morulab > BLM Connector (Standalone)` を選択。
+Unityメニューから `Morulab > Launcher` を選択。
 
-### 2. アセットのインポート
+### 2. BLM Connector を使用
+
+ランチャーから `BLM Connector` を選択するか、`Morulab > BLM Connector (Standalone)` から直接開く。
+
+### 3. アセットのインポート
 
 1. **グリッドから選択**: 商品をクリックして詳細を表示
 2. **ダブルクリック**: 全パッケージをキューに追加
 3. **個別インポート**: 詳細パネルから特定のアセットのみインポート
 4. **キュー処理**: `Process Queue` ボタンで一括インポート実行
 
-### 3. ローカルアセットの追加
+### 4. ローカルアセットの追加
 
 1. `Open Local Assets Folder` でフォルダを開く
 2. `LocalAssets/` 内にフォルダを作成
 3. `.unitypackage` ファイルを配置
 4. Refresh で読み込み
 
-### 4. インポート先
+### 5. インポート先
 
 | アセットタイプ | インポート先 |
 |--------------|------------|

@@ -14,7 +14,7 @@ namespace Moruton.BLMConnector
         private const string DLL_SQLITE_MANAGED = "Mono.Data.Sqlite.dll";
         
         // Path in our package
-        private static string MyPluginPath => "Packages/com.moruton.blm-local-connector/Editor/BLMConnector/Plugins";
+        private static string MyPluginPath => "Packages/com.morulab.unity-tools/Editor/BLMConnector/Plugins";
 
         static BLMEnvironmentManager()
         {
