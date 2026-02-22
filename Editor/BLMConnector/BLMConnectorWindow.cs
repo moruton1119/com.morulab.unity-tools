@@ -57,6 +57,7 @@ namespace Moruton.BLMConnector
         private List<string> selectedPackagePaths = new List<string>();
         private Toggle filterBLMToggle;
         private Toggle filterOthersToggle;
+        private HashSet<string> importedProductIds = new HashSet<string>();
 
         public VisualElement CreateUI()
         {
@@ -173,6 +174,7 @@ namespace Moruton.BLMConnector
 
         private void RefreshData()
         {
+            importedProductIds.Clear();
             BLMHistory.Refresh();
 
             // Load BLM products from database
@@ -302,6 +304,11 @@ namespace Moruton.BLMConnector
                 {
                     item.AddToClassList("installed");
                 }
+                
+                if (importedProductIds.Contains(product.id))
+                {
+                    item.AddToClassList("batch-imported");
+                }
 
                 gridContainer.Add(item);
             }
@@ -328,9 +335,25 @@ namespace Moruton.BLMConnector
                 if (product.packages != null && product.packages.Count > 0)
                 {
                     var paths = product.packages.Select(p => p.fullPath).ToList();
+                    
+                    if (paths.Count >= 2)
+                    {
+                        bool ok = EditorUtility.DisplayDialog(
+                            "Batch Import",
+                            $"Importing {paths.Count} packages.\n\nSkip All (Import Dialog) will be automatically enabled.\n\nContinue?",
+                            "OK", "Cancel");
+                        if (!ok) return;
+                        AssetImportQueue.InteractiveMode = false;
+                    }
+                    
+                    importedProductIds.Add(product.id);
                     AssetImportQueue.EnqueueMultiple(paths, product.id);
                     UpdateQueueStatus();
-                    RefreshData();
+                    RebuildGrid(allProducts.Where(p => {
+                        if (p.sourceType == "BLM" && !(filterBLMToggle?.value ?? true)) return false;
+                        if (p.sourceType == "Local" && !(filterOthersToggle?.value ?? true)) return false;
+                        return true;
+                    }).ToList());
                 }
             }
         }
@@ -504,7 +527,13 @@ namespace Moruton.BLMConnector
             try
             {
                 BLMAssetImporter.ImportAsset(asset, product.name);
+                importedProductIds.Add(product.id);
                 Debug.Log($"[BLM] Successfully imported {asset.fileName}");
+                RebuildGrid(allProducts.Where(p => {
+                    if (p.sourceType == "BLM" && !(filterBLMToggle?.value ?? true)) return false;
+                    if (p.sourceType == "Local" && !(filterOthersToggle?.value ?? true)) return false;
+                    return true;
+                }).ToList());
             }
             catch (Exception ex)
             {
