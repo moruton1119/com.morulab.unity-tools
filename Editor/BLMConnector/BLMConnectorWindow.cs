@@ -565,7 +565,7 @@ namespace Moruton.BLMConnector
 
         private void UpdateDetailFooter(BoothProduct product)
         {
-            var footer = detailPanel.Q<VisualElement>("modal-footer");
+            var footer = detailPanel.Q<VisualElement>(className: "modal-footer");
             if (footer == null) return;
 
             footer.Clear();
