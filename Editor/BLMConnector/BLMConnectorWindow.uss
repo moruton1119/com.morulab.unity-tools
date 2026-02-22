@@ -8,6 +8,8 @@
 /* Header */
 .header {
     height: 40px;
+    min-height: 40px;
+    flex-shrink: 0;
     background-color: #383838;
     border-bottom-width: 1px;
     border-bottom-color: #1a1a1a;
@@ -283,13 +285,21 @@
 
 /* Footer (Queue) */
 .footer {
-    height: 35px;
+    min-height: 60px;
+    height: auto;
+    flex-shrink: 0;
+    flex-wrap: wrap;
     background-color: #252525;
     border-top-width: 1px;
     border-top-color: #1a1a1a;
     flex-direction: row;
     align-items: center;
-    padding: 0 15px;
+    padding: 8px 15px;
+}
+
+.footer Button {
+    min-height: 24px;
+    min-width: 80px;
 }
 
 .queue-status {

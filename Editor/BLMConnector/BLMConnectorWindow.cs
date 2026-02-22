@@ -514,7 +514,6 @@ namespace Moruton.BLMConnector
             selectedPackagePaths.Clear();
             detailOverlay.RemoveFromClassList("detail-panel-hidden");
 
-            // 既存のUIXML要素を使用（ランチャー互換性のため）
             var nameLbl = detailPanel.Q<Label>("detail-product-name");
             if (nameLbl != null) nameLbl.text = product.name;
 
@@ -525,47 +524,96 @@ namespace Moruton.BLMConnector
             if (list == null) return;
             list.Clear();
 
-            // アセットをタイプごとにグループ化
+            UpdateDetailFooter(product);
+
             var unityPackages = product.assets.Where(a => a.assetType == AssetType.UnityPackage).ToList();
             var textures = product.assets.Where(a => a.assetType == AssetType.Texture).ToList();
             var models = product.assets.Where(a => a.assetType == AssetType.Model).ToList();
             var audio = product.assets.Where(a => a.assetType == AssetType.Audio).ToList();
             var others = product.assets.Where(a => a.assetType == AssetType.Other).ToList();
 
-            // UnityPackage ゾーン
             if (unityPackages.Count > 0)
             {
                 AddAssetZone(list, "UnityPackages", unityPackages, product);
             }
 
-            // Textures ゾーン
             if (textures.Count > 0)
             {
                 AddAssetZone(list, "Textures", textures, product);
             }
 
-            // Models ゾーン
             if (models.Count > 0)
             {
                 AddAssetZone(list, "Models", models, product);
             }
 
-            // Audio ゾーン
             if (audio.Count > 0)
             {
                 AddAssetZone(list, "Audio", audio, product);
             }
 
-            // Others ゾーン
             if (others.Count > 0)
             {
                 AddAssetZone(list, "Other Files", others, product);
             }
 
-            // アセットが1つもない場合
             if (product.assets.Count == 0)
             {
                 list.Add(new Label("No assets found.") { style = { color = Color.gray } });
+            }
+        }
+
+        private void UpdateDetailFooter(BoothProduct product)
+        {
+            var footer = detailPanel.Q<VisualElement>("modal-footer");
+            if (footer == null) return;
+
+            footer.Clear();
+
+            if (BLMHistory.IsInstalled(product))
+            {
+                var showBtn = new Button(() => ShowInProject(product.id))
+                {
+                    text = "Show in Project"
+                };
+                showBtn.style.marginRight = 10;
+                footer.Add(showBtn);
+            }
+
+            var spacer = new VisualElement();
+            spacer.style.flexGrow = 1;
+            footer.Add(spacer);
+
+            var addBtn = new Button(AddSelectedToQueue)
+            {
+                text = "Add to Queue"
+            };
+            addBtn.AddToClassList("import-button");
+            footer.Add(addBtn);
+        }
+
+        private void ShowInProject(string productId)
+        {
+            string[] guids = AssetDatabase.FindAssets($"l:BLM_PID_{productId}");
+
+            if (guids.Length > 0)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+
+                if (obj != null)
+                {
+                    Selection.activeObject = obj;
+                    EditorGUIUtility.PingObject(obj);
+                    Debug.Log($"[BLM] Focused imported folder: {path}");
+                    return;
+                }
+            }
+
+            Debug.LogWarning($"[BLM] No imported folder found for product {productId}");
+            if (selectedProduct != null && Directory.Exists(selectedProduct.rootFolderPath))
+            {
+                EditorUtility.RevealInFinder(selectedProduct.rootFolderPath);
             }
         }
 
@@ -583,10 +631,40 @@ namespace Moruton.BLMConnector
             zone.style.borderTopLeftRadius = 5;
             zone.style.borderTopRightRadius = 5;
 
+            var headerRow = new VisualElement();
+            headerRow.style.flexDirection = FlexDirection.Row;
+            headerRow.style.justifyContent = Justify.SpaceBetween;
+            headerRow.style.marginBottom = 8;
+
             var zoneHeader = new Label($"─ {zoneName} ({assets.Count}) ─");
             zoneHeader.style.unityFontStyleAndWeight = FontStyle.Bold;
-            zoneHeader.style.marginBottom = 8;
-            zone.Add(zoneHeader);
+            headerRow.Add(zoneHeader);
+
+            if (assets.Count > 1)
+            {
+                var selectAllBtn = new Button(() =>
+                {
+                    foreach (var asset in assets)
+                    {
+                        if (!selectedPackagePaths.Contains(asset.fullPath))
+                            selectedPackagePaths.Add(asset.fullPath);
+                    }
+                    RefreshDetailPanel();
+                }) { text = "Select All" };
+                selectAllBtn.style.width = 70;
+                headerRow.Add(selectAllBtn);
+
+                var deselectAllBtn = new Button(() =>
+                {
+                    foreach (var asset in assets)
+                        selectedPackagePaths.Remove(asset.fullPath);
+                    RefreshDetailPanel();
+                }) { text = "Deselect" };
+                deselectAllBtn.style.width = 70;
+                headerRow.Add(deselectAllBtn);
+            }
+
+            zone.Add(headerRow);
 
             foreach (var asset in assets)
             {
@@ -596,26 +674,38 @@ namespace Moruton.BLMConnector
                 assetRow.style.marginBottom = 5;
                 assetRow.style.paddingLeft = 10;
 
-                var assetLabel = new Label($"○ {asset.fileName}");
-                assetLabel.style.flexGrow = 1;
+                var toggle = new Toggle { text = asset.fileName, value = selectedPackagePaths.Contains(asset.fullPath) };
+                toggle.style.flexGrow = 1;
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (evt.newValue)
+                    {
+                        if (!selectedPackagePaths.Contains(asset.fullPath))
+                            selectedPackagePaths.Add(asset.fullPath);
+                    }
+                    else
+                    {
+                        selectedPackagePaths.Remove(asset.fullPath);
+                    }
+                });
 
                 var importBtn = new Button(() => ImportAsset(asset, product)) { text = "Import" };
                 importBtn.style.width = 80;
 
-                assetRow.Add(assetLabel);
+                assetRow.Add(toggle);
                 assetRow.Add(importBtn);
                 zone.Add(assetRow);
             }
 
-            // Import All ボタン
-            if (assets.Count > 1)
-            {
-                var importAllBtn = new Button(() => ImportAllAssets(assets, product)) { text = $"Import All {zoneName}" };
-                importAllBtn.style.marginTop = 8;
-                zone.Add(importAllBtn);
-            }
-
             parent.Add(zone);
+        }
+
+        private void RefreshDetailPanel()
+        {
+            if (selectedProduct != null)
+            {
+                ShowDetail(selectedProduct);
+            }
         }
 
         private void ImportAsset(BoothAsset asset, BoothProduct product)
