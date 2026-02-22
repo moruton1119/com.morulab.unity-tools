@@ -51,12 +51,14 @@ namespace Moruton.BLMConnector
     {
         private VisualElement root;
         private VisualElement gridContainer;
+        private VisualElement detailOverlay;
         private VisualElement detailPanel;
         private List<BoothProduct> allProducts = new List<BoothProduct>();
         private BoothProduct selectedProduct;
         private List<string> selectedPackagePaths = new List<string>();
         private Toggle filterBLMToggle;
         private Toggle filterOthersToggle;
+        private HashSet<string> importedProductIds = new HashSet<string>();
 
         public VisualElement CreateUI()
         {
@@ -74,7 +76,21 @@ namespace Moruton.BLMConnector
             root.style.height = Length.Percent(100);
 
             gridContainer = root.Q<VisualElement>("grid-container");
+            detailOverlay = root.Q<VisualElement>("detail-overlay");
             detailPanel = root.Q<VisualElement>("detail-panel");
+
+            // 背景クリックでモーダルを閉じる
+            if (detailOverlay != null)
+            {
+                detailOverlay.RegisterCallback<ClickEvent>(evt =>
+                {
+                    if (evt.target == detailOverlay)
+                    {
+                        HideDetail();
+                        evt.StopPropagation();
+                    }
+                });
+            }
 
             BindButton("refresh-db", RefreshData);
             BindButton("close-detail", HideDetail);
@@ -173,6 +189,7 @@ namespace Moruton.BLMConnector
 
         private void RefreshData()
         {
+            importedProductIds.Clear();
             BLMHistory.Refresh();
 
             // Load BLM products from database
@@ -302,6 +319,11 @@ namespace Moruton.BLMConnector
                 {
                     item.AddToClassList("installed");
                 }
+                
+                if (importedProductIds.Contains(product.id))
+                {
+                    item.AddToClassList("batch-imported");
+                }
 
                 gridContainer.Add(item);
             }
@@ -328,9 +350,25 @@ namespace Moruton.BLMConnector
                 if (product.packages != null && product.packages.Count > 0)
                 {
                     var paths = product.packages.Select(p => p.fullPath).ToList();
+                    
+                    if (paths.Count >= 2)
+                    {
+                        bool ok = EditorUtility.DisplayDialog(
+                            "Batch Import",
+                            $"Importing {paths.Count} packages.\n\nSkip All (Import Dialog) will be automatically enabled.\n\nContinue?",
+                            "OK", "Cancel");
+                        if (!ok) return;
+                        AssetImportQueue.InteractiveMode = false;
+                    }
+                    
+                    importedProductIds.Add(product.id);
                     AssetImportQueue.EnqueueMultiple(paths, product.id);
                     UpdateQueueStatus();
-                    RefreshData();
+                    RebuildGrid(allProducts.Where(p => {
+                        if (p.sourceType == "BLM" && !(filterBLMToggle?.value ?? true)) return false;
+                        if (p.sourceType == "Local" && !(filterOthersToggle?.value ?? true)) return false;
+                        return true;
+                    }).ToList());
                 }
             }
         }
@@ -390,10 +428,10 @@ namespace Moruton.BLMConnector
 
         private void ShowDetail(BoothProduct product)
         {
-            if (detailPanel == null) return;
+            if (detailOverlay == null) return;
             selectedProduct = product;
             selectedPackagePaths.Clear();
-            detailPanel.RemoveFromClassList("detail-panel-hidden");
+            detailOverlay.RemoveFromClassList("detail-panel-hidden");
 
             // 既存のUIXML要素を使用（ランチャー互換性のため）
             var nameLbl = detailPanel.Q<Label>("detail-product-name");
@@ -504,7 +542,13 @@ namespace Moruton.BLMConnector
             try
             {
                 BLMAssetImporter.ImportAsset(asset, product.name);
+                importedProductIds.Add(product.id);
                 Debug.Log($"[BLM] Successfully imported {asset.fileName}");
+                RebuildGrid(allProducts.Where(p => {
+                    if (p.sourceType == "BLM" && !(filterBLMToggle?.value ?? true)) return false;
+                    if (p.sourceType == "Local" && !(filterOthersToggle?.value ?? true)) return false;
+                    return true;
+                }).ToList());
             }
             catch (Exception ex)
             {
@@ -520,7 +564,7 @@ namespace Moruton.BLMConnector
             }
         }
 
-        private void HideDetail() => detailPanel?.AddToClassList("detail-panel-hidden");
+        private void HideDetail() => detailOverlay?.AddToClassList("detail-panel-hidden");
 
         private void AddSelectedToQueue()
         {

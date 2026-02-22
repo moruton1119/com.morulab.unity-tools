@@ -25,24 +25,28 @@
                 <ui:Button name="open-local-assets" text="📁 Open LocalAssets Folder" style="margin-top: 10px;" />
             </ui:VisualElement>
 
-            <!-- Center Content (Grid + Bottom Panel) -->
+            <!-- Center Content (Grid) -->
             <ui:VisualElement class="center-content">
                 <!-- Grid Content -->
                 <ui:ScrollView name="asset-scroll-view" class="asset-grid">
                     <ui:VisualElement name="grid-container" class="grid-container" />
                 </ui:ScrollView>
+            </ui:VisualElement>
+        </ui:VisualElement>
 
-                <!-- Detail Panel (Bottom Aligned) -->
-                <ui:VisualElement name="detail-panel" class="detail-panel detail-panel-hidden">
-                    <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 5px;">
-                        <ui:Label name="detail-product-name" text="Product" style="-unity-font-style: bold; font-size: 14px;" />
-                        <ui:Button name="close-detail" text="×" />
-                    </ui:VisualElement>
-                    <ui:VisualElement style="flex-direction: row; align-items: center; background-color: rgba(0,0,0,0.2); border-radius: 3px; padding: 5px; margin-bottom: 10px;">
-                        <ui:Label name="detail-path" text="..." style="flex-grow: 1; font-size: 9px; opacity: 0.7; -unity-text-overflow-position: start;" />
-                        <ui:Button name="open-folder" text="📁" style="width: 25px; height: 18px; font-size: 10px; padding: 0;" />
-                    </ui:VisualElement>
-                    <ui:ScrollView name="package-list" style="flex-grow: 1;" />
+        <!-- Detail Modal Overlay -->
+        <ui:VisualElement name="detail-overlay" class="detail-overlay detail-panel-hidden">
+            <ui:VisualElement name="detail-panel" class="detail-modal">
+                <ui:VisualElement class="modal-header">
+                    <ui:Label name="detail-product-name" text="Product" class="modal-title" />
+                    <ui:Button name="close-detail" text="×" class="modal-close-btn" />
+                </ui:VisualElement>
+                <ui:VisualElement class="modal-path-bar">
+                    <ui:Label name="detail-path" text="..." class="modal-path" />
+                    <ui:Button name="open-folder" text="📁" class="modal-folder-btn" />
+                </ui:VisualElement>
+                <ui:ScrollView name="package-list" class="modal-scroll" />
+                <ui:VisualElement class="modal-footer">
                     <ui:Button name="add-to-queue" text="Add to Queue" class="import-button" />
                 </ui:VisualElement>
             </ui:VisualElement>

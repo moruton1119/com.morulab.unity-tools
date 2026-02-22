@@ -163,18 +163,122 @@
     color: #aaa;
 }
 
-/* Detail Panel (Bottom) */
-.detail-panel {
-    height: 220px;
-    background-color: #333;
-    border-top-width: 1px;
-    border-top-color: #1a1a1a;
-    padding: 10px 15px;
-    flex-shrink: 0;
+/* Detail Modal Overlay */
+.detail-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: 0.2s;
 }
 
-.detail-panel-hidden {
-    display: none;
+.detail-overlay.detail-panel-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.detail-modal {
+    width: 600px;
+    max-height: 500px;
+    background-color: #2d2d2d;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: #444;
+    padding: 0;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    scale: 1;
+    transition-property: scale;
+    transition-duration: 0.2s;
+}
+
+.detail-panel-hidden .detail-modal {
+    scale: 0.95;
+}
+
+.modal-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #333;
+    border-bottom-width: 1px;
+    border-bottom-color: #444;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.modal-title {
+    font-size: 18px;
+    -unity-font-style: bold;
+    color: #fff;
+    flex-grow: 1;
+}
+
+.modal-close-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 22px;
+    background-color: transparent;
+    border-width: 0;
+    color: #aaa;
+    padding: 0;
+}
+
+.modal-close-btn:hover {
+    color: #fff;
+    background-color: #555;
+    border-radius: 4px;
+}
+
+.modal-path-bar {
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: rgba(0,0,0,0.2);
+}
+
+.modal-path {
+    flex-grow: 1;
+    font-size: 11px;
+    color: #888;
+}
+
+.modal-folder-btn {
+    width: 28px;
+    height: 24px;
+    font-size: 12px;
+    padding: 0;
+    background-color: transparent;
+    border-width: 0;
+}
+
+.modal-folder-btn:hover {
+    background-color: #444;
+    border-radius: 3px;
+}
+
+.modal-scroll {
+    flex-grow: 1;
+    padding: 10px 20px;
+    max-height: 320px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top-width: 1px;
+    border-top-color: #444;
+    flex-direction: row;
+    justify-content: flex-end;
+    background-color: #282828;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
 }
 
 .package-list-item {
@@ -221,4 +325,10 @@
 
 .installed:hover {
     opacity: 0.8;
+}
+
+.batch-imported {
+    border-color: #4a9eff;
+    border-width: 2px;
+    background-color: rgba(74, 158, 255, 0.1);
 }
