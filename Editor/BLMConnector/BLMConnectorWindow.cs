@@ -51,6 +51,7 @@ namespace Moruton.BLMConnector
     {
         private VisualElement root;
         private VisualElement gridContainer;
+        private VisualElement detailOverlay;
         private VisualElement detailPanel;
         private List<BoothProduct> allProducts = new List<BoothProduct>();
         private BoothProduct selectedProduct;
@@ -75,7 +76,21 @@ namespace Moruton.BLMConnector
             root.style.height = Length.Percent(100);
 
             gridContainer = root.Q<VisualElement>("grid-container");
+            detailOverlay = root.Q<VisualElement>("detail-overlay");
             detailPanel = root.Q<VisualElement>("detail-panel");
+
+            // 背景クリックでモーダルを閉じる
+            if (detailOverlay != null)
+            {
+                detailOverlay.RegisterCallback<ClickEvent>(evt =>
+                {
+                    if (evt.target == detailOverlay)
+                    {
+                        HideDetail();
+                        evt.StopPropagation();
+                    }
+                });
+            }
 
             BindButton("refresh-db", RefreshData);
             BindButton("close-detail", HideDetail);
@@ -413,10 +428,10 @@ namespace Moruton.BLMConnector
 
         private void ShowDetail(BoothProduct product)
         {
-            if (detailPanel == null) return;
+            if (detailOverlay == null) return;
             selectedProduct = product;
             selectedPackagePaths.Clear();
-            detailPanel.RemoveFromClassList("detail-panel-hidden");
+            detailOverlay.RemoveFromClassList("detail-panel-hidden");
 
             // 既存のUIXML要素を使用（ランチャー互換性のため）
             var nameLbl = detailPanel.Q<Label>("detail-product-name");
@@ -549,7 +564,7 @@ namespace Moruton.BLMConnector
             }
         }
 
-        private void HideDetail() => detailPanel?.AddToClassList("detail-panel-hidden");
+        private void HideDetail() => detailOverlay?.AddToClassList("detail-panel-hidden");
 
         private void AddSelectedToQueue()
         {
