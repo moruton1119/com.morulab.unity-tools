@@ -740,6 +740,7 @@ namespace Moruton.BLMConnector
             selectedPackagePaths.Clear();
             HideDetail();
             UpdateQueueStatus();
+            ShowQueueList();
         }
 
         private T LoadAsset<T>(string fileName) where T : UnityEngine.Object
