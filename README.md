@@ -26,34 +26,34 @@ https://moruton1119.github.io/com.morulab.unity-tools/index.json
 
 ```mermaid
 graph TB
-    subgraph UI["UI層"]
-        Window[BLMConnectorWindow<br/>エディタウィンドウ]
-        UXML[BLMConnectorWindow.uxml<br/>UIレイアウト]
-        USS[BLMConnectorWindow.uss<br/>スタイル]
+    subgraph UI[UI層]
+        Window["BLMConnectorWindow\n(エディタウィンドウ)"]
+        UXML["BLMConnectorWindow.uxml\n(UIレイアウト)"]
+        USS["BLMConnectorWindow.uss\n(スタイル)"]
     end
 
-    subgraph Core["コア層"]
-        App[BLMConnectorApp<br/>アプリケーションロジック]
-        Models[BLMDataModels<br/>データモデル]
+    subgraph Core[コア層]
+        App["BLMConnectorApp\n(アプリケーションロジック)"]
+        Models["BLMDataModels\n(データモデル)"]
     end
 
-    subgraph Services["サービス層"]
-        DB[BLMDatabaseService<br/>SQLite読み込み]
-        Local[LocalAssetService<br/>ローカルアセット読み込み]
-        Importer[BLMAssetImporter<br/>アセットインポート]
+    subgraph Services[サービス層]
+        DB["BLMDatabaseService\n(SQLite読み込み)"]
+        Local["LocalAssetService\n(ローカルアセット読み込み)"]
+        Importer["BLMAssetImporter\n(アセットインポート)"]
     end
 
-    subgraph Infrastructure["インフラ層"]
-        Queue[AssetImportQueue<br/>インポートキュー]
-        History[BLMHistory<br/>インポート履歴]
-        Tagger[BLMProductTagger<br/>アセットタグ付け]
-        Env[BLMEnvironmentManager<br/>環境設定]
+    subgraph Infrastructure[インフラ層]
+        Queue["AssetImportQueue\n(インポートキュー)"]
+        History["BLMHistory\n(インポート履歴)"]
+        Tagger["BLMProductTagger\n(アセットタグ付け)"]
+        Env["BLMEnvironmentManager\n(環境設定)"]
     end
 
-    subgraph External["外部データソース"]
-        BLM_DB[(BLM Database<br/>data.db)]
-        BLM_Library[BLM Library Root<br/>b{id}/]
-        LocalAssets[LocalAssets/<br/>ローカル開発用]
+    subgraph External[外部データソース]
+        BLM_DB[("BLM Database\n(data.db)")]
+        BLM_Library["BLM Library Root\n(b{id}/)"]
+        LocalAssets["LocalAssets/\n(ローカル開発用)"]
     end
 
     Window --> App
@@ -82,25 +82,25 @@ graph TB
 
 ```mermaid
 flowchart LR
-    subgraph Sources["データソース"]
-        A1[(BLM SQLite<br/>data.db)]
-        A2[LocalAssets/<br/>フォルダ]
+    subgraph Sources[データソース]
+        A1[("BLM SQLite\n(data.db)")]
+        A2["LocalAssets/\n(フォルダ)"]
     end
     
-    subgraph Load["読み込み"]
+    subgraph Load[読み込み]
         B1[BLMDatabaseService]
         B2[LocalAssetService]
     end
     
-    subgraph Process["処理"]
-        C1[BoothProduct<br/>モデル]
+    subgraph Process[処理]
+        C1["BoothProduct\n(モデル)"]
         C2[AssetImportQueue]
         C3[BLMAssetImporter]
     end
     
-    subgraph Unity["Unity"]
-        D1[Assets/BLM_Imports/]
-        D2[アセットタグ<br/>BLM_Managed]
+    subgraph Unity[Unity]
+        D1["Assets/BLM_Imports/"]
+        D2["アセットタグ\n(BLM_Managed)"]
     end
     
     A1 --> B1 --> C1
