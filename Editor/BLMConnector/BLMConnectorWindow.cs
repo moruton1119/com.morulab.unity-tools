@@ -710,24 +710,46 @@ namespace Moruton.BLMConnector
 
         private void ImportAsset(BoothAsset asset, BoothProduct product)
         {
+            AssetImportQueue.StartManualImport(product.id);
             try
             {
                 BLMAssetImporter.ImportAsset(asset, product.name);
                 importedProductIds.Add(product.id);
                 Debug.Log($"[BLM] Successfully imported {asset.fileName}");
                 ApplyFilters();
+                UpdateDetailFooter(product);
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[BLM] Failed to import {asset.fileName}: {ex.Message}");
             }
+            finally
+            {
+                AssetImportQueue.EndManualImport();
+            }
         }
 
         private void ImportAllAssets(List<BoothAsset> assets, BoothProduct product)
         {
-            foreach (var asset in assets)
+            AssetImportQueue.StartManualImport(product.id);
+            try
             {
-                ImportAsset(asset, product);
+                foreach (var asset in assets)
+                {
+                    BLMAssetImporter.ImportAsset(asset, product.name);
+                }
+                importedProductIds.Add(product.id);
+                Debug.Log($"[BLM] Successfully imported {assets.Count} assets");
+                ApplyFilters();
+                UpdateDetailFooter(product);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[BLM] Failed to import assets: {ex.Message}");
+            }
+            finally
+            {
+                AssetImportQueue.EndManualImport();
             }
         }
 

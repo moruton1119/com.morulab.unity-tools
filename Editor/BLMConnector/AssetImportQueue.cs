@@ -201,12 +201,28 @@ namespace Moruton.BLMConnector
         public static int RemainingCount => importQueue.Count;
         public static bool IsImporting => isImporting;
 
+        private static string manualImportProductId = null;
+        public static string CurrentProductId => currentItem?.productId ?? manualImportProductId;
+
+        public static void StartManualImport(string productId)
+        {
+            isImporting = true;
+            manualImportProductId = productId;
+            SaveState();
+        }
+
+        public static void EndManualImport()
+        {
+            isImporting = false;
+            manualImportProductId = null;
+            SaveState();
+        }
+
         public static string[] GetQueueItems()
         {
             var list = new List<string>();
             foreach (var item in importQueue) list.Add(item.path);
             return list.ToArray();
         }
-        public static string CurrentProductId => currentItem?.productId;
     }
 }
