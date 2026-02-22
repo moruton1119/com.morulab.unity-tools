@@ -13,15 +13,15 @@ namespace Moruton.BLMConnector
 {
     public class BLMConnectorWindow : EditorWindow
     {
-    [MenuItem("Morulab/BLM Connector (Standalone)")]
-    [MenuDescription("Booth Library Manager Connector (Standalone). Manage and import assets from your local library.", "Import & Export")]
-    [ToolLocalize("en", "BLM Connector (Standalone)", "Manage and import assets from your local library.", "Import & Export")]
-    [ToolLocalize("ja", "BLM Connector (単独版)", "ローカルのBOOTHライブラリを管理し、アセットを一括インポートします。", "インポート・エクスポート")]
-    [ToolLocalize("ko", "BLM Connector (Standalone)", "로컬 BOOTH 라이브러리를 관리하고 에셋을 일괄 가져오기 합니다.", "가져오기 및 내보내기")]
+    [MenuItem("Morulab/BLM Connector")]
+    [MenuDescription("Booth Library Manager Connector. Manage and import assets from your local library.", "Import & Export")]
+    [ToolLocalize("en", "BLM Connector", "Manage and import assets from your local library.", "Import & Export")]
+    [ToolLocalize("ja", "BLM Connector", "ローカルのBOOTHライブラリを管理し、アセットを一括インポートします。", "インポート・エクスポート")]
+    [ToolLocalize("ko", "BLM Connector", "로컬 BOOTH 라이브러리를 관리하고 에셋을 일괄 가져오기 합니다.", "가져오기 및 내보내기")]
     public static void ShowWindow()
         {
             var window = GetWindow<BLMConnectorWindow>();
-            window.titleContent = new GUIContent("BLM Connector (Std)");
+            window.titleContent = new GUIContent("BLM Connector");
             window.minSize = new Vector2(800, 500);
         }
 
