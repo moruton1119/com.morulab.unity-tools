@@ -576,8 +576,16 @@ namespace Moruton.BLMConnector
                 {
                     text = "Show in Project"
                 };
-                showBtn.style.marginRight = 10;
+                showBtn.style.marginRight = 5;
                 footer.Add(showBtn);
+
+                var deleteBtn = new Button(() => DeleteFromProject(product.id))
+                {
+                    text = "Delete"
+                };
+                deleteBtn.style.marginRight = 10;
+                deleteBtn.style.backgroundColor = new Color(0.6f, 0.2f, 0.2f);
+                footer.Add(deleteBtn);
             }
 
             var spacer = new VisualElement();
@@ -614,6 +622,50 @@ namespace Moruton.BLMConnector
             if (selectedProduct != null && Directory.Exists(selectedProduct.rootFolderPath))
             {
                 EditorUtility.RevealInFinder(selectedProduct.rootFolderPath);
+            }
+        }
+
+        private void DeleteFromProject(string productId)
+        {
+            string[] guids = AssetDatabase.FindAssets($"l:BLM_PID_{productId}");
+
+            if (guids.Length == 0)
+            {
+                EditorUtility.DisplayDialog("Delete", "No imported folder found.", "OK");
+                return;
+            }
+
+            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+            var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+            
+            if (obj == null)
+            {
+                EditorUtility.DisplayDialog("Delete", "Could not load asset.", "OK");
+                return;
+            }
+
+            var labels = AssetDatabase.GetLabels(obj);
+            if (!labels.Any(l => l.StartsWith("BLM_PID_")))
+            {
+                EditorUtility.DisplayDialog("Delete", "Folder has no BLM_PID label.", "OK");
+                return;
+            }
+
+            bool confirm = EditorUtility.DisplayDialog(
+                "Delete Imported Assets",
+                $"Delete the following folder from your project?\n\n{path}",
+                "Delete", "Cancel");
+
+            if (!confirm) return;
+
+            AssetDatabase.DeleteAsset(path);
+            BLMHistory.Unmark(productId);
+            Debug.Log($"[BLM] Deleted: {path}");
+
+            ApplyFilters();
+            if (selectedProduct != null)
+            {
+                UpdateDetailFooter(selectedProduct);
             }
         }
 
