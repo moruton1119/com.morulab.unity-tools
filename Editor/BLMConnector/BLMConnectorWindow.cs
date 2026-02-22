@@ -160,7 +160,7 @@ namespace Moruton.BLMConnector
             else if (selectedValue.StartsWith("📋 "))
             {
                 currentFilterType = FilterType.CustomList;
-                var listTitle = selectedValue.Substring(2);
+                var listTitle = selectedValue.Substring(2).Trim();
                 var list = availableLists.FirstOrDefault(l => l.title == listTitle);
                 if (list != null)
                 {
