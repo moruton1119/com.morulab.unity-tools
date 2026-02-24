@@ -17,7 +17,7 @@ namespace Moruton.BLMConnector
         public static string GetDefaultDbPath()
         {
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            return Path.Combine(appData, "pm.booth.library-manager", "data.db");
+            return Path.Combine(appData, BLMConstants.BLMAppDataFolder, "data.db");
         }
 
         public static string LibraryRoot { get; private set; }
@@ -96,7 +96,7 @@ namespace Moruton.BLMConnector
                                 p.rootFolderPath = productPath;
 
                                 string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                                string cacheDir = Path.Combine(appData, "pm.booth.library-manager", "cache", "thumbnails");
+                                string cacheDir = Path.Combine(appData, BLMConstants.BLMAppDataFolder, BLMConstants.BLMCacheThumbnailsFolder);
                                 string png = Path.Combine(cacheDir, $"{p.id}.png");
                                 string jpg = Path.Combine(cacheDir, $"{p.id}.jpg");
                                 if (File.Exists(png)) p.thumbnailPath = png;
@@ -251,48 +251,21 @@ namespace Moruton.BLMConnector
             var assets = new List<BoothAsset>();
             if (!string.IsNullOrEmpty(rootPath) && Directory.Exists(rootPath))
             {
-                // サポートする拡張子 (.blend は Unity で認識できないため除外)
-                string[] extensions = {
-                    "*.unitypackage",
-                    "*.png", "*.jpg", "*.jpeg", "*.tga", "*.psd",
-                    "*.fbx", "*.obj",
-                    "*.wav", "*.mp3", "*.ogg"
-                };
-
-                foreach (var ext in extensions)
+                foreach (var pattern in AssetTypeUtils.GetSearchPatterns())
                 {
-                    var files = Directory.GetFiles(rootPath, ext, SearchOption.AllDirectories);
+                    var files = Directory.GetFiles(rootPath, pattern, SearchOption.AllDirectories);
                     foreach (var file in files)
                     {
                         assets.Add(new BoothAsset
                         {
                             fileName = Path.GetFileName(file),
                             fullPath = file,
-                            assetType = GetAssetType(Path.GetExtension(file))
+                            assetType = AssetTypeUtils.GetAssetType(Path.GetExtension(file))
                         });
                     }
                 }
             }
             return assets;
-        }
-
-        private static AssetType GetAssetType(string extension)
-        {
-            switch (extension.ToLower())
-            {
-                case ".unitypackage": return AssetType.UnityPackage;
-                case ".png":
-                case ".jpg":
-                case ".jpeg":
-                case ".tga":
-                case ".psd": return AssetType.Texture;
-                case ".fbx":
-                case ".obj": return AssetType.Model;
-                case ".wav":
-                case ".mp3":
-                case ".ogg": return AssetType.Audio;
-                default: return AssetType.Other;
-            }
         }
 
         public static List<BoothList> LoadLists(string dbPath)

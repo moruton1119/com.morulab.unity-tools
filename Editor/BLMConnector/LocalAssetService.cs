@@ -8,9 +8,6 @@ namespace Moruton.BLMConnector
 {
     public static class LocalAssetService
     {
-        /// <summary>
-        /// Load local development assets from {libraryRoot}/LocalAssets/ folder
-        /// </summary>
         public static List<BoothProduct> LoadLocalAssets(string libraryRoot)
         {
             var products = new List<BoothProduct>();
@@ -21,7 +18,7 @@ namespace Moruton.BLMConnector
                 return products;
             }
 
-            string localAssetsPath = Path.Combine(libraryRoot, "LocalAssets");
+            string localAssetsPath = Path.Combine(libraryRoot, BLMConstants.LocalAssetsFolderName);
 
             if (!Directory.Exists(localAssetsPath))
             {
@@ -38,23 +35,21 @@ namespace Moruton.BLMConnector
                 {
                     var product = new BoothProduct
                     {
-                        id = "local_" + Path.GetFileName(folder),
+                        id = BLMConstants.LocalIdPrefix + Path.GetFileName(folder),
                         name = Path.GetFileName(folder),
-                        shopName = "Local",
+                        shopName = BLMConstants.LocalShopName,
                         rootFolderPath = folder,
                         sourceType = "Local",
                         packages = new List<BoothPackage>(),
                         assets = new List<BoothAsset>()
                     };
 
-                    // Find ANY image file in ROOT as thumbnail (first found)
-                    string[] imageExtensions = { ".png", ".jpg", ".jpeg", ".tga", ".psd" };
                     var rootFiles = Directory.GetFiles(folder, "*.*", SearchOption.TopDirectoryOnly);
 
                     foreach (var file in rootFiles)
                     {
                         string ext = Path.GetExtension(file).ToLower();
-                        if (Array.Exists(imageExtensions, e => e == ext))
+                        if (AssetTypeUtils.IsImageFile(ext))
                         {
                             product.thumbnailPath = file;
                             Debug.Log($"[BLM Standalone] Found thumbnail for {product.name}: {Path.GetFileName(file)}");
@@ -62,7 +57,6 @@ namespace Moruton.BLMConnector
                         }
                     }
 
-                    // Find ALL .unitypackage files recursively in entire folder hierarchy
                     var allFiles = Directory.GetFiles(folder, "*.*", SearchOption.AllDirectories);
 
                     foreach (var file in allFiles)
@@ -70,10 +64,8 @@ namespace Moruton.BLMConnector
                         string ext = Path.GetExtension(file).ToLower();
                         string fileName = Path.GetFileName(file);
 
-                        // Skip .blend files
                         if (ext == ".blend") continue;
 
-                        // Add .unitypackage files
                         if (ext == ".unitypackage")
                         {
                             product.packages.Add(new BoothPackage
@@ -89,10 +81,8 @@ namespace Moruton.BLMConnector
                                 assetType = AssetType.UnityPackage
                             });
                         }
-                        // Add textures (images NOT in root folder)
-                        else if (Array.Exists(imageExtensions, e => e == ext))
+                        else if (AssetTypeUtils.IsImageFile(ext))
                         {
-                            // Skip if this is the thumbnail (root folder image)
                             if (file == product.thumbnailPath) continue;
 
                             product.assets.Add(new BoothAsset
@@ -104,7 +94,6 @@ namespace Moruton.BLMConnector
                         }
                     }
 
-                    // Only add if at least one .unitypackage exists
                     if (product.packages.Count > 0)
                     {
                         products.Add(product);

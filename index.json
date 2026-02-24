@@ -85,6 +85,14 @@
                     "description": "Morulab Launcher Hub with BLM Connector tool.",
                     "unity": "2019.4",
                     "url": "https://github.com/moruton1119/com.morulab.unity-tools/releases/download/v1.0.0/com.morulab.unity-tools-1.0.0.zip"
+                },
+                "1.0.1": {
+                    "name": "com.morulab.unity-tools",
+                    "version": "1.0.1",
+                    "displayName": "Morulab Unity Tools",
+                    "description": "Morulab Launcher Hub with BLM Connector tool.",
+                    "unity": "2019.4",
+                    "url": "https://github.com/moruton1119/com.morulab.unity-tools/releases/download/v1.0.1/com.morulab.unity-tools-1.0.1.zip"
                 }
             }
         }

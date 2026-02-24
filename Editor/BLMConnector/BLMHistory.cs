@@ -16,7 +16,7 @@ namespace Moruton.BLMConnector
         {
             installedIds.Clear();
 
-            string[] guids = AssetDatabase.FindAssets("l:BLM_Managed");
+            string[] guids = AssetDatabase.FindAssets($"l:{BLMConstants.Label_Managed}");
             foreach (var guid in guids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
@@ -26,9 +26,9 @@ namespace Moruton.BLMConnector
                 var labels = AssetDatabase.GetLabels(asset);
                 foreach (var label in labels)
                 {
-                    if (label.StartsWith("BLM_PID_"))
+                    if (label.StartsWith(BLMConstants.LabelPrefix_PID))
                     {
-                        string pid = label.Substring("BLM_PID_".Length);
+                        string pid = label.Substring(BLMConstants.LabelPrefix_PID.Length);
                         installedIds.Add(pid);
                     }
                 }

@@ -13,12 +13,7 @@ namespace Moruton.BLMConnector
 {
     public class BLMConnectorWindow : EditorWindow
     {
-    [MenuItem("Morulab/BLM Connector")]
-    [MenuDescription("Booth Library Manager Connector. Manage and import assets from your local library.", "Import & Export")]
-    [ToolLocalize("en", "BLM Connector", "Manage and import assets from your local library.", "Import & Export")]
-    [ToolLocalize("ja", "BLM Connector", "ローカルのBOOTHライブラリを管理し、アセットを一括インポートします。", "インポート・エクスポート")]
-    [ToolLocalize("ko", "BLM Connector", "로컬 BOOTH 라이브러리를 관리하고 에셋을 일괄 가져오기 합니다.", "가져오기 및 내보내기")]
-    public static void ShowWindow()
+        public static void ShowWindow()
         {
             var window = GetWindow<BLMConnectorWindow>();
             window.titleContent = new GUIContent("BLM Connector");
@@ -207,7 +202,7 @@ namespace Moruton.BLMConnector
         {
             AssetImportQueue.OnImportFinishedAction += OnImportItemFinished;
             RefreshData();
-            root.schedule.Execute(UpdateQueueStatus).Every(500);
+            root.schedule.Execute(UpdateQueueStatus).Every(BLMConstants.QueueStatusUpdateIntervalMs);
         }
 
         private void OnDetach(DetachFromPanelEvent evt)
@@ -282,7 +277,7 @@ namespace Moruton.BLMConnector
         {
             if (string.IsNullOrEmpty(BLMDatabaseService.LibraryRoot)) return;
 
-            string localAssetsPath = Path.Combine(BLMDatabaseService.LibraryRoot, "LocalAssets");
+            string localAssetsPath = Path.Combine(BLMDatabaseService.LibraryRoot, BLMConstants.LocalAssetsFolderName);
             if (!Directory.Exists(localAssetsPath))
             {
                 try
@@ -305,7 +300,7 @@ namespace Moruton.BLMConnector
                 return;
             }
 
-            string localAssetsPath = Path.Combine(BLMDatabaseService.LibraryRoot, "LocalAssets");
+            string localAssetsPath = Path.Combine(BLMDatabaseService.LibraryRoot, BLMConstants.LocalAssetsFolderName);
 
             // Create folder if it doesn't exist
             if (!Directory.Exists(localAssetsPath))
@@ -468,7 +463,7 @@ namespace Moruton.BLMConnector
                 catch { }
             }
 
-            string cacheDir = "Library/Moruton.BLMConnector/Thumbnails";
+            string cacheDir = BLMConstants.ThumbnailCacheDir;
             if (!Directory.Exists(cacheDir)) Directory.CreateDirectory(cacheDir);
 
             string cachePath = $"{cacheDir}/{product.id}.png";
@@ -602,7 +597,7 @@ namespace Moruton.BLMConnector
 
         private void ShowInProject(string productId)
         {
-            string[] guids = AssetDatabase.FindAssets($"l:BLM_PID_{productId}");
+            string[] guids = AssetDatabase.FindAssets($"l:{BLMConstants.LabelPrefix_PID}{productId}");
 
             if (guids.Length > 0)
             {
@@ -627,7 +622,7 @@ namespace Moruton.BLMConnector
 
         private void DeleteFromProject(string productId)
         {
-            string[] guids = AssetDatabase.FindAssets($"l:BLM_PID_{productId}");
+            string[] guids = AssetDatabase.FindAssets($"l:{BLMConstants.LabelPrefix_PID}{productId}");
 
             if (guids.Length == 0)
             {
@@ -645,18 +640,44 @@ namespace Moruton.BLMConnector
             }
 
             var labels = AssetDatabase.GetLabels(obj);
-            if (!labels.Any(l => l.StartsWith("BLM_PID_")))
+            if (!labels.Any(l => l.StartsWith(BLMConstants.LabelPrefix_PID)))
             {
                 EditorUtility.DisplayDialog("Delete", "Folder has no BLM_PID label.", "OK");
                 return;
             }
 
-            bool confirm = EditorUtility.DisplayDialog(
-                "Delete Imported Assets",
-                $"Delete the following folder from your project?\n\n{path}",
-                "Delete", "Cancel");
+            var otherProductIds = labels
+                .Where(l => l.StartsWith(BLMConstants.LabelPrefix_PID) && l != $"{BLMConstants.LabelPrefix_PID}{productId}")
+                .Select(l => l.Substring(BLMConstants.LabelPrefix_PID.Length))
+                .ToList();
 
-            if (!confirm) return;
+            if (otherProductIds.Count > 0)
+            {
+                string otherNames = string.Join("\n", otherProductIds.Take(5).Select(id => $"• Product ID: {id}"));
+                if (otherProductIds.Count > 5)
+                    otherNames += $"\n... and {otherProductIds.Count - 5} more";
+
+                bool proceed = EditorUtility.DisplayDialog(
+                    "Warning: Shared Folder",
+                    $"This folder contains other products:\n{otherNames}\n\nDeleting will remove ALL contents including other products.\n\nTarget: {path}",
+                    "Delete Anyway", "Cancel");
+
+                if (!proceed) return;
+            }
+            else
+            {
+                bool confirm = EditorUtility.DisplayDialog(
+                    "Delete Imported Assets",
+                    $"Delete the following folder from your project?\n\n{path}",
+                    "Delete", "Cancel");
+
+                if (!confirm) return;
+            }
+
+            foreach (var otherPid in otherProductIds)
+            {
+                BLMHistory.Unmark(otherPid);
+            }
 
             AssetDatabase.DeleteAsset(path);
             BLMHistory.Unmark(productId);
@@ -762,22 +783,33 @@ namespace Moruton.BLMConnector
 
         private void ImportAsset(BoothAsset asset, BoothProduct product)
         {
-            AssetImportQueue.StartManualImport(product.id);
-            try
+            if (asset.assetType == AssetType.UnityPackage)
             {
-                BLMAssetImporter.ImportAsset(asset, product.name);
                 importedProductIds.Add(product.id);
-                Debug.Log($"[BLM] Successfully imported {asset.fileName}");
-                ApplyFilters();
-                UpdateDetailFooter(product);
+                AssetImportQueue.Enqueue(asset.fullPath, product.id);
+                AssetImportQueue.StartImport();
+                UpdateQueueStatus();
+                ShowQueueList();
             }
-            catch (Exception ex)
+            else
             {
-                Debug.LogError($"[BLM] Failed to import {asset.fileName}: {ex.Message}");
-            }
-            finally
-            {
-                AssetImportQueue.EndManualImport();
+                AssetImportQueue.StartManualImport(product.id);
+                try
+                {
+                    BLMAssetImporter.ImportAsset(asset, product.name);
+                    importedProductIds.Add(product.id);
+                    Debug.Log($"[BLM] Successfully imported {asset.fileName}");
+                    ApplyFilters();
+                    UpdateDetailFooter(product);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[BLM] Failed to import {asset.fileName}: {ex.Message}");
+                }
+                finally
+                {
+                    AssetImportQueue.EndManualImport();
+                }
             }
         }
 

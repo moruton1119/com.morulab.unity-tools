@@ -27,8 +27,8 @@ namespace Moruton.BLMConnector
 
             if (roots.Count == 0) return;
 
-            string labelId = $"BLM_PID_{pid}";
-            string labelTag = "BLM_Managed";
+            string labelId = $"{BLMConstants.LabelPrefix_PID}{pid}";
+            string labelTag = BLMConstants.Label_Managed;
 
             foreach (var rootPath in roots)
             {
