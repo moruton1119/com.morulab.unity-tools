@@ -36,19 +36,23 @@ namespace MorulabTools.Launcher
         // Cache for loaded tools
         private List<ToolCommandData> _allCommands = new List<ToolCommandData>();
 
+        private const string PackagePath = "Packages/com.morulab.unity-tools/Editor/Tools/Launcher";
+
         public void CreateGUI()
         {
             // Load UXML
-            var visualTree = Resources.Load<VisualTreeAsset>("MorulabLauncher");
+            var uxmlPath = $"{PackagePath}/MorulabLauncher.uxml";
+            var visualTree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(uxmlPath);
             if (visualTree == null)
             {
-                rootVisualElement.Add(new Label("Error: Could not load MorulabLauncher.uxml"));
+                rootVisualElement.Add(new Label($"Error: Could not load {uxmlPath}"));
                 return;
             }
             visualTree.CloneTree(rootVisualElement);
 
             // Load USS
-            var styleSheet = Resources.Load<StyleSheet>("MorulabLauncher");
+            var ussPath = $"{PackagePath}/MorulabLauncher.uss";
+            var styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(ussPath);
             if (styleSheet != null) rootVisualElement.styleSheets.Add(styleSheet);
 
             // Find Elements
