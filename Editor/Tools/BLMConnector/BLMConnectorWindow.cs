@@ -857,7 +857,7 @@ namespace Moruton.BLMConnector
         private T LoadAsset<T>(string fileName) where T : UnityEngine.Object
         {
             string[] paths = {
-                $"Packages/com.morulab.unity-tools/Editor/BLMConnector/{fileName}"
+                $"Packages/com.morulab.unity-tools/Editor/Tools/BLMConnector/{fileName}"
             };
             foreach (var path in paths)
             {
