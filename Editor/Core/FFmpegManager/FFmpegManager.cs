@@ -1,7 +1,10 @@
 using UnityEngine;
 using UnityEditor;
+using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Net;
 using Process = System.Diagnostics.Process;
 using ProcessStartInfo = System.Diagnostics.ProcessStartInfo;
 
@@ -112,18 +115,15 @@ namespace MorulabTools.Core
         }
 
         /// <summary>
-        /// ブラウザでffmpegのダウンロードページを開く
+        /// ブラウザでffmpegのダウンロードページを開く（手動DL用）
         /// </summary>
         public static void OpenDownloadPage()
         {
-            // Windows: gyan.dev（LGPL essentials build）
-            // Mac: evermeet.cx
-            // Linux: johnvansickle.com
             string url;
             switch (Application.platform)
             {
                 case RuntimePlatform.WindowsEditor:
-                    url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
+                    url = "https://www.gyan.dev/ffmpeg/builds/";
                     break;
                 case RuntimePlatform.OSXEditor:
                     url = "https://evermeet.cx/ffmpeg/";
@@ -133,6 +133,211 @@ namespace MorulabTools.Core
                     break;
             }
             Application.OpenURL(url);
+        }
+
+        // ─── 自動ダウンロード＆インストール ───
+
+        private static WebClient _activeClient;
+
+        /// <summary>
+        /// プラットフォーム別のFFmpegダウンロードURL
+        /// </summary>
+        private static string GetDownloadUrl()
+        {
+            switch (Application.platform)
+            {
+                case RuntimePlatform.WindowsEditor:
+                    return "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
+                case RuntimePlatform.OSXEditor:
+                    return "https://evermeet.cx/ffmpeg/getrelease/zip";
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// FFmpegを自動ダウンロード＆インストールする。
+        /// Library/MorulabTools/ffmpeg/ に自動配置し、パスを設定する。
+        /// Windows・macOS対応。Linuxは手動DLへフォールバック。
+        /// </summary>
+        public static void DownloadAndInstall()
+        {
+            if (_activeClient != null)
+            {
+                Debug.LogWarning("[FFmpegManager] Download already in progress.");
+                return;
+            }
+
+            string url = GetDownloadUrl();
+            if (url == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Unsupported Platform",
+                    "Automatic FFmpeg download is supported on Windows and macOS only.\n\n" +
+                    "Please download FFmpeg manually and set the path.",
+                    "Open Download Page", "Cancel");
+                // OpenDownloadPageは呼び出し側で判断
+                return;
+            }
+
+            string installDir = DefaultInstallDir;
+            Directory.CreateDirectory(installDir);
+
+            string zipPath = Path.Combine(installDir, "__ffmpeg_dl.tmp");
+            if (File.Exists(zipPath))
+                File.Delete(zipPath);
+
+            _activeClient = new WebClient();
+
+            _activeClient.DownloadProgressChanged += (sender, e) =>
+            {
+                bool cancel = EditorUtility.DisplayCancelableProgressBar(
+                    "Downloading FFmpeg",
+                    $"{e.ProgressPercentage}% ({e.BytesReceived / 1024 / 1024}MB / {e.TotalBytesToReceive / 1024 / 1024}MB)",
+                    e.ProgressPercentage / 100f);
+
+                if (cancel)
+                    _activeClient.CancelAsync();
+            };
+
+            _activeClient.DownloadFileCompleted += (sender, e) =>
+            {
+                EditorUtility.ClearProgressBar();
+
+                if (e.Cancelled)
+                {
+                    Debug.Log("[FFmpegManager] Download cancelled.");
+                    CleanupTemp(zipPath);
+                    FinishDownload();
+                    return;
+                }
+
+                if (e.Error != null)
+                {
+                    Debug.LogError($"[FFmpegManager] Download failed: {e.Error.Message}");
+                    EditorUtility.DisplayDialog("Download Failed",
+                        $"Failed to download FFmpeg:\n{e.Error.Message}", "OK");
+                    CleanupTemp(zipPath);
+                    FinishDownload();
+                    return;
+                }
+
+                // ── Extract ──
+                try
+                {
+                    EditorUtility.DisplayProgressBar("Installing FFmpeg", "Extracting...", 0.9f);
+
+                    // 古いffmpegファイルをクリーンアップ
+                    foreach (var f in Directory.GetFiles(installDir, "*", SearchOption.AllDirectories))
+                    {
+                        if (!f.EndsWith("__ffmpeg_dl.tmp"))
+                        {
+                            try { File.Delete(f); } catch { }
+                        }
+                    }
+
+                    // ZIP解凍
+                    ZipFile.ExtractToDirectory(zipPath, installDir, overwriteFiles: true);
+                    File.Delete(zipPath);
+
+                    EditorUtility.ClearProgressBar();
+
+                    // ffmpeg実行ファイルを検索
+                    string ffmpegExe = FindFFmpegExecutable(installDir);
+
+                    if (string.IsNullOrEmpty(ffmpegExe))
+                    {
+                        EditorUtility.DisplayDialog("Installation Failed",
+                            "FFmpeg was downloaded but the executable could not be found.\n" +
+                            $"Check: {installDir}", "OK");
+                    }
+                    else
+                    {
+                        // Mac/Linux: 実行権限を付与
+                        if (Application.platform == RuntimePlatform.OSXEditor)
+                        {
+                            try
+                            {
+                                var chmod = new ProcessStartInfo
+                                {
+                                    FileName = "chmod",
+                                    Arguments = $"+x \"{ffmpegExe}\"",
+                                    UseShellExecute = false,
+                                    CreateNoWindow = true
+                                };
+                                Process.Start(chmod)?.WaitForExit();
+                            }
+                            catch { }
+                        }
+
+                        if (SetFFmpegPath(ffmpegExe))
+                        {
+                            EditorUtility.DisplayDialog("Installation Complete! 🎉",
+                                $"FFmpeg has been installed to:\n{ffmpegExe}\n\nYou're all set!", "OK");
+                            Debug.Log($"[FFmpegManager] FFmpeg installed: {ffmpegExe}");
+                        }
+                        else
+                        {
+                            EditorUtility.DisplayDialog("Installation Failed",
+                                "FFmpeg was extracted but failed verification.\n" +
+                                $"Path: {ffmpegExe}", "OK");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    EditorUtility.ClearProgressBar();
+                    Debug.LogError($"[FFmpegManager] Extraction failed: {ex.Message}");
+                    EditorUtility.DisplayDialog("Installation Failed",
+                        $"Failed to extract FFmpeg:\n{ex.Message}", "OK");
+                }
+
+                FinishDownload();
+            };
+
+            Debug.Log($"[FFmpegManager] Downloading FFmpeg from: {url}");
+            _activeClient.DownloadFileAsync(new Uri(url), zipPath);
+        }
+
+        private static void CleanupTemp(string path)
+        {
+            try { if (File.Exists(path)) File.Delete(path); } catch { }
+        }
+
+        private static void FinishDownload()
+        {
+            _activeClient?.Dispose();
+            _activeClient = null;
+            EditorUtility.ClearProgressBar();
+        }
+
+        /// <summary>
+        /// インストールディレクトリからffmpeg実行ファイルを再帰的に探す
+        /// </summary>
+        private static string FindFFmpegExecutable(string dir)
+        {
+            if (!Directory.Exists(dir))
+                return null;
+
+            string exeName = Application.platform == RuntimePlatform.WindowsEditor
+                ? "ffmpeg.exe"
+                : "ffmpeg";
+
+            // 完全一致
+            var exact = Directory.GetFiles(dir, exeName, SearchOption.AllDirectories);
+            if (exact.Length > 0)
+                return exact[0];
+
+            // ワイルドカード
+            var wild = Directory.GetFiles(dir, "ffmpeg*", SearchOption.AllDirectories);
+            foreach (var f in wild)
+            {
+                var name = Path.GetFileName(f);
+                if (name == "ffmpeg" || name == "ffmpeg.exe")
+                    return f;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -227,26 +432,32 @@ namespace MorulabTools.Core
             }
 
             // 見つからない場合はDLを促す
-            bool download = EditorUtility.DisplayDialog(
+            int choice = EditorUtility.DisplayDialogComplex(
                 "FFmpeg Required",
                 "Some Morulab tools require FFmpeg for video export.\n\n" +
                 "FFmpeg was not found on your system.\n\n" +
-                "Would you like to download it now?",
-                "Download FFmpeg",
-                "Later");
+                "How would you like to proceed?",
+                "Auto Install",   // 0
+                "Later",          // 1
+                "Manual Download"); // 2
 
-            if (download)
+            switch (choice)
             {
-                OpenDownloadPage();
-
-                if (EditorUtility.DisplayDialog(
-                    "Locate FFmpeg",
-                    "After downloading and extracting FFmpeg,\nclick 'Browse' to locate it.",
-                    "Browse...",
-                    "Cancel"))
-                {
-                    BrowseAndSet();
-                }
+                case 0: // Auto Install
+                    DownloadAndInstall();
+                    break;
+                case 2: // Manual Download
+                    OpenDownloadPage();
+                    if (EditorUtility.DisplayDialog(
+                        "Locate FFmpeg",
+                        "After downloading and extracting FFmpeg,\nclick 'Browse' to locate it.",
+                        "Browse...",
+                        "Cancel"))
+                    {
+                        BrowseAndSet();
+                    }
+                    break;
+                // case 1: Later → 何もしない
             }
         }
     }
