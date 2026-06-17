@@ -358,7 +358,8 @@ namespace MorulabTools.Core
 
                 _updateStatus = "\u30d1\u30c3\u30b1\u30fc\u30b8\u3092\u66f4\u65b0\u4e2d...";
 
-                // \u5dee\u5206\u66f4\u65b0\n                string absolutePackagePath = Path.GetFullPath($"Packages/{packageName}");
+                // 差分更新
+                string absolutePackagePath = Path.GetFullPath($"Packages/{packageName}");
                 string sourceContentPath = extractPath;
 
                 // ZIP\u5185\u306b\u30d1\u30c3\u30b1\u30fc\u30b8\u540d\u30c7\u30a3\u30ec\u30af\u30c8\u30ea\u304c\u3042\u308b\u5834\u5408\u306e\u5bfe\u5fdc
