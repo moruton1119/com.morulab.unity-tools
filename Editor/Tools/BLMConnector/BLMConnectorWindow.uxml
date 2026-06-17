@@ -55,9 +55,10 @@
                 <ui:Label name="queue-status" text="Queue is empty" class="blm-queue-status" />
                 <ui:Toggle name="interactive-toggle" label="Show Import Dialog" value="true" class="blm-footer-toggle" />
                 <ui:VisualElement style="flex-grow: 1;" />
-                <ui:Button name="view-queue" text="📋 View List" class="blm-footer-btn" />
+                <ui:Button name="view-queue" text="Queue" class="blm-footer-btn" />
                 <ui:Button name="reset-queue" text="Clear" class="blm-footer-btn" />
-                <ui:Button name="process-queue" text="⚡ Process Queue (0)" class="blm-import-button" />
+                <ui:Button name="open-local-assets" text="Local" class="blm-footer-btn" />
+                <ui:Button name="process-queue" text="Process Queue (0)" class="blm-import-button" />
             </ui:VisualElement>
             <ui:VisualElement name="queue-list-panel" class="blm-queue-expanded blm-detail-hidden">
                 <ui:Label text="Import Queue" class="blm-queue-expanded-title" />
