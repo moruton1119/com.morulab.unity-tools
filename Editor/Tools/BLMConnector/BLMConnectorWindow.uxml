@@ -15,6 +15,7 @@
                 <ui:Button name="grid-view-btn" class="blm-icon-btn blm-icon-btn-active" text="Grid" />
                 <ui:Button name="list-view-btn" class="blm-icon-btn" text="List" />
                 <ui:Button name="refresh-db" class="blm-icon-btn" text="Refresh" />
+                <ui:Button name="open-local-assets-header" class="blm-local-btn" text="Local Assets" />
             </ui:VisualElement>
             <!-- Row 2: Filter chips + Sort -->
             <ui:VisualElement class="blm-header-row">
