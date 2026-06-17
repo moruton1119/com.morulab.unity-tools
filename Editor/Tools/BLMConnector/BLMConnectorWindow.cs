@@ -617,14 +617,19 @@ namespace Moruton.BLMConnector
         {
             if (!string.IsNullOrEmpty(product.thumbnailPath) && File.Exists(product.thumbnailPath))
             {
-                try
+                // Defer heavy File.ReadAllBytes + LoadImage to avoid blocking UI
+                string path = product.thumbnailPath;
+                img.schedule.Execute(() =>
                 {
-                    var tex = new Texture2D(2, 2);
-                    tex.LoadImage(File.ReadAllBytes(product.thumbnailPath));
-                    img.image = tex;
-                    return;
-                }
-                catch { }
+                    try
+                    {
+                        var tex = new Texture2D(2, 2);
+                        tex.LoadImage(File.ReadAllBytes(path));
+                        img.image = tex;
+                    }
+                    catch { }
+                }).ExecuteLater(0);
+                return;
             }
 
             string cacheDir = BLMConstants.ThumbnailCacheDir;
@@ -1079,6 +1084,18 @@ namespace Moruton.BLMConnector
 
         private void UpdateQueueStatus()
         {
+            // Early exit: skip query when nothing to update
+            if (!AssetImportQueue.IsImporting && AssetImportQueue.RemainingCount == 0)
+            {
+                var sl = root?.Q<Label>("queue-status");
+                var pb = root?.Q<Button>("process-queue");
+                if (sl != null && sl.text != "Queue is empty")
+                    sl.text = "Queue is empty";
+                if (pb != null && !pb.text.EndsWith("(0)"))
+                    pb.text = "Process Queue (0)";
+                return;
+            }
+
             var statusLabel = root?.Q<Label>("queue-status");
             var processBtn = root?.Q<Button>("process-queue");
             if (statusLabel != null) statusLabel.text = AssetImportQueue.IsImporting ? "Importing..." : $"{AssetImportQueue.RemainingCount} items in queue";
