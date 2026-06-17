@@ -59,8 +59,10 @@
 
         <!-- Footer -->
         <ui:VisualElement class="blm-footer">
-            <ui:Label name="queue-status" text="Queue is empty" class="blm-queue-status" />
-            <ui:Toggle name="interactive-toggle" label="Show Import Dialog" value="true" class="blm-footer-toggle" />
+            <ui:VisualElement class="blm-footer-top">
+                <ui:Label name="queue-status" text="Queue is empty" class="blm-queue-status" />
+                <ui:Toggle name="interactive-toggle" label="Show Import Dialog" value="true" class="blm-footer-toggle" />
+            </ui:VisualElement>
             <ui:VisualElement class="blm-footer-actions">
                 <ui:Button name="view-queue" text="View List" class="blm-footer-btn" />
                 <ui:Button name="reset-queue" text="Clear Queue" class="blm-footer-btn" />
