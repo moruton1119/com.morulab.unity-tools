@@ -16,6 +16,8 @@ namespace Moruton.BLMConnector
         // Path in our package
         private static string MyPluginPath => "Packages/com.morulab.unity-tools/Editor/Tools/BLMConnector/Plugins";
 
+        private static bool hasInitialized = false;
+
         static BLMEnvironmentManager()
         {
             EditorApplication.delayCall += Initialize;
@@ -23,6 +25,8 @@ namespace Moruton.BLMConnector
 
         private static void Initialize()
         {
+            if (hasInitialized) return; // Run only once per session
+            hasInitialized = true;
             var nativeResult = FindDlls(DLL_SQLITE_NATIVE);
             var managedResult = FindDlls(DLL_SQLITE_MANAGED);
 
