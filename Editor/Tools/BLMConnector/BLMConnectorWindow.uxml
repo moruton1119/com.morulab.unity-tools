@@ -5,7 +5,7 @@
     xmlns:ue="UnityEditor.UIElements"
     xsi:noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd"
 >
-    <ui:VisualElement class="blm-root-container">
+    <ui:VisualElement class="blm-root-container" editor-extension-mode="True">
         <!-- Header -->
         <ui:VisualElement class="blm-header">
             <ui:Button name="hamburger-menu" class="blm-hamburger-btn" text="≡" />
