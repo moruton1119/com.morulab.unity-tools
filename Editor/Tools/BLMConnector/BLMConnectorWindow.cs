@@ -273,7 +273,7 @@ namespace Moruton.BLMConnector
                 {
                     // Wait for AssetDatabase to finish processing labels
                     AssetDatabase.Refresh();
-                    ShowInProduct(pid);
+                    ShowInProject(pid);
                 }).ExecuteLater(500); // 500ms delay for label assignment to complete
             }
         }
