@@ -6,30 +6,29 @@
     xsi:noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd"
 >
     <ui:VisualElement class="blm-root-container" editor-extension-mode="True">
-        <!-- Header -->
+        <!-- Header (unified: search + filter + sort + view toggle) -->
         <ui:VisualElement class="blm-header">
-            <ui:Button name="hamburger-menu" class="blm-hamburger-btn" text="≡" />
-            <ui:Label text="Morulab BLM Connector" class="blm-title" />
-            <ui:VisualElement style="flex-grow: 1;" />
-            <ui:Button name="refresh-db" text="Refresh DB" class="blm-refresh-btn" />
+            <!-- Row 1: Title + Search + Actions -->
+            <ui:VisualElement class="blm-header-row">
+                <ui:Label text="BLM Connector" class="blm-title" />
+                <ui:TextField name="search-field" placeholder-text="Search assets..." class="blm-search-bar" />
+                <ui:Button name="grid-view-btn" class="blm-icon-btn blm-icon-btn-active" text="▦" />
+                <ui:Button name="list-view-btn" class="blm-icon-btn" text="☰" />
+                <ui:Button name="refresh-db" class="blm-icon-btn" text="🔄" />
+            </ui:VisualElement>
+            <!-- Row 2: Filter chips + Sort -->
+            <ui:VisualElement class="blm-header-row">
+                <ui:VisualElement name="filter-chips" class="blm-filter-chips" />
+                <ui:VisualElement style="flex-grow: 1;" />
+                <ui:DropdownField name="sort-dropdown" class="blm-sort-dropdown" />
+            </ui:VisualElement>
         </ui:VisualElement>
 
         <!-- Main Content -->
         <ui:VisualElement class="blm-main-content">
-            <!-- Sidebar (Toggleable) -->
-            <ui:VisualElement name="sidebar" class="blm-sidebar">
-                <ui:TextField name="search-field" placeholder-text="Search assets..." class="blm-search-bar" />
-                <ui:Label text="FILTER" class="blm-filter-label" />
-                <ui:VisualElement name="filter-dropdown-container" class="blm-filter-group" />
-                <ui:Button name="open-local-assets" text="📁 Open LocalAssets Folder" class="blm-open-folder-btn" />
-            </ui:VisualElement>
-
-            <!-- Center Content (Grid) -->
-            <ui:VisualElement class="blm-center-content">
-                <ui:ScrollView name="asset-scroll-view" class="blm-asset-grid">
-                    <ui:VisualElement name="grid-container" class="blm-grid-container" />
-                </ui:ScrollView>
-            </ui:VisualElement>
+            <ui:ScrollView name="asset-scroll-view" class="blm-asset-grid">
+                <ui:VisualElement name="grid-container" class="blm-grid-container" />
+            </ui:ScrollView>
         </ui:VisualElement>
 
         <!-- Detail Modal Overlay -->
@@ -50,23 +49,19 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
-        <!-- Queue List Panel (Hidden by default) -->
-        <ui:VisualElement name="queue-list-panel" class="blm-queue-panel blm-detail-hidden">
-            <ui:Label text="Import Queue" class="blm-queue-panel-title" />
-            <ui:ScrollView name="queue-list-scroll" class="blm-queue-panel-scroll" />
-            <ui:Button name="close-queue-list" text="Close" class="blm-queue-panel-close" />
-        </ui:VisualElement>
-
-        <!-- Footer -->
+        <!-- Footer with inline Queue -->
         <ui:VisualElement class="blm-footer">
             <ui:VisualElement class="blm-footer-top">
                 <ui:Label name="queue-status" text="Queue is empty" class="blm-queue-status" />
                 <ui:Toggle name="interactive-toggle" label="Show Import Dialog" value="true" class="blm-footer-toggle" />
+                <ui:VisualElement style="flex-grow: 1;" />
+                <ui:Button name="view-queue" text="📋 View List" class="blm-footer-btn" />
+                <ui:Button name="reset-queue" text="Clear" class="blm-footer-btn" />
+                <ui:Button name="process-queue" text="⚡ Process Queue (0)" class="blm-import-button" />
             </ui:VisualElement>
-            <ui:VisualElement class="blm-footer-actions">
-                <ui:Button name="view-queue" text="View List" class="blm-footer-btn" />
-                <ui:Button name="reset-queue" text="Clear Queue" class="blm-footer-btn" />
-                <ui:Button name="process-queue" text="Process Queue (0)" class="blm-import-button" />
+            <ui:VisualElement name="queue-list-panel" class="blm-queue-expanded blm-detail-hidden">
+                <ui:Label text="Import Queue" class="blm-queue-expanded-title" />
+                <ui:ScrollView name="queue-list-scroll" class="blm-queue-expanded-scroll" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

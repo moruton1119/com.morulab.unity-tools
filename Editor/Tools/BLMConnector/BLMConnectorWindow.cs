@@ -55,14 +55,20 @@ namespace Moruton.BLMConnector
         private VisualElement detailOverlay;
         private VisualElement detailPanel;
         private List<BoothProduct> allProducts = new List<BoothProduct>();
+        private List<BoothProduct> filteredProducts = new List<BoothProduct>();
         private BoothProduct selectedProduct;
         private List<string> selectedPackagePaths = new List<string>();
         private HashSet<string> importedProductIds = new HashSet<string>();
 
         private List<BoothList> availableLists = new List<BoothList>();
-        private PopupField<string> filterDropdown;
         private FilterType currentFilterType = FilterType.AllProducts;
         private int currentListId = -1;
+        private bool isListView = false;
+        private string searchText = "";
+
+        private DropdownField sortDropdown;
+        private enum SortMode { NameAsc, NameDesc, ShopAsc }
+        private SortMode currentSort = SortMode.NameAsc;
 
         public VisualElement CreateUI()
         {
@@ -103,15 +109,44 @@ namespace Moruton.BLMConnector
             BindButton("process-queue", () => AssetImportQueue.StartImport());
             BindButton("view-queue", ShowQueueList);
             BindButton("reset-queue", () => { AssetImportQueue.ClearQueue(); UpdateQueueStatus(); });
-            BindButton("close-queue-list", () => root.Q<VisualElement>("queue-list-panel")?.AddToClassList("blm-detail-hidden"));
-            BindButton("open-local-assets", OpenLocalAssetsFolder);
 
-            var hamburger = root.Q<Button>("hamburger-menu");
-            var sidebar = root.Q<VisualElement>("sidebar");
-            if (hamburger != null && sidebar != null)
+            // Grid / List view toggle
+            var gridBtn = root.Q<Button>("grid-view-btn");
+            var listBtn = root.Q<Button>("list-view-btn");
+            if (gridBtn != null) gridBtn.clicked += () => SetViewMode(false);
+            if (listBtn != null) listBtn.clicked += () => SetViewMode(true);
+
+            // Search field
+            var searchField = root.Q<TextField>("search-field");
+            if (searchField != null)
             {
-                hamburger.clicked += () => sidebar.ToggleInClassList("blm-sidebar-hidden");
+                searchField.RegisterValueChangedCallback(evt =>
+                {
+                    searchText = evt.newValue?.ToLower() ?? "";
+                    ApplyFilters();
+                });
             }
+
+            // Sort dropdown
+            sortDropdown = root.Q<DropdownField>("sort-dropdown");
+            if (sortDropdown != null)
+            {
+                sortDropdown.choices = new List<string> { "Name (A-Z)", "Name (Z-X)", "Shop Name" };
+                sortDropdown.value = "Name (A-Z)";
+                sortDropdown.RegisterValueChangedCallback(evt =>
+                {
+                    currentSort = evt.newValue switch
+                    {
+                        "Name (Z-X)" => SortMode.NameDesc,
+                        "Shop Name" => SortMode.ShopAsc,
+                        _ => SortMode.NameAsc
+                    };
+                    ApplyFilters();
+                });
+            }
+
+            // Setup filter chips
+            SetupFilterChips();
 
             var toggle = root.Q<Toggle>("interactive-toggle");
             if (toggle != null)
@@ -120,7 +155,8 @@ namespace Moruton.BLMConnector
                 toggle.RegisterValueChangedCallback(evt => AssetImportQueue.InteractiveMode = evt.newValue);
             }
 
-            SetupFilterDropdown();
+            // Setup filter dropdown (kept for compatibility)
+            SetupFilterChips();
 
             root.RegisterCallback<AttachToPanelEvent>(OnAttach);
             root.RegisterCallback<DetachFromPanelEvent>(OnDetach);
@@ -128,31 +164,52 @@ namespace Moruton.BLMConnector
             return root;
         }
 
-        private void SetupFilterDropdown()
+        private void SetupFilterChips()
         {
-            var container = root.Q<VisualElement>("filter-dropdown-container");
+            var container = root.Q<VisualElement>("filter-chips");
             if (container == null) return;
 
-            var choices = new List<string> { "All Products", "BLM Products", "Local Products" };
-            filterDropdown = new PopupField<string>(choices, 0);
-            filterDropdown.style.width = Length.Percent(100);
-            filterDropdown.RegisterValueChangedCallback(evt => OnFilterChanged(evt.newValue));
-            container.Add(filterDropdown);
+            container.Clear();
+
+            var chips = new[] { "All", "BLM", "Local", "Booth" };
+            foreach (var chip in chips)
+            {
+                var btn = new Button { text = chip };
+                btn.AddToClassList("blm-chip");
+                if (chip == "All") btn.AddToClassList("blm-chip-active");
+
+                var chipValue = chip;
+                btn.clicked += () =>
+                {
+                    container.Query<Button>().ForEach(b => b.RemoveFromClassList("blm-chip-active"));
+                    btn.AddToClassList("blm-chip-active");
+
+                    currentFilterType = chipValue switch
+                    {
+                        "BLM" => FilterType.BLMProducts,
+                        "Local" => FilterType.LocalProducts,
+                        _ => FilterType.AllProducts
+                    };
+                    ApplyFilters();
+                };
+
+                container.Add(btn);
+            }
         }
 
         private void OnFilterChanged(string selectedValue)
         {
-            if (selectedValue == "All Products")
+            if (selectedValue == "All Products" || selectedValue == "All")
             {
                 currentFilterType = FilterType.AllProducts;
                 currentListId = -1;
             }
-            else if (selectedValue == "BLM Products")
+            else if (selectedValue == "BLM Products" || selectedValue == "BLM")
             {
                 currentFilterType = FilterType.BLMProducts;
                 currentListId = -1;
             }
-            else if (selectedValue == "Local Products")
+            else if (selectedValue == "Local Products" || selectedValue == "Local")
             {
                 currentFilterType = FilterType.LocalProducts;
                 currentListId = -1;
@@ -174,27 +231,8 @@ namespace Moruton.BLMConnector
 
         private void UpdateFilterDropdownChoices()
         {
-            if (filterDropdown == null) return;
-
-            var choices = new List<string> { "All Products", "BLM Products", "Local Products" };
-            foreach (var list in availableLists)
-            {
-                choices.Add($"📋 {list.title}");
-            }
-
-            var currentValue = filterDropdown.value;
-            filterDropdown.choices = choices;
-
-            if (choices.Contains(currentValue))
-            {
-                filterDropdown.value = currentValue;
-            }
-            else
-            {
-                filterDropdown.index = 0;
-                currentFilterType = FilterType.AllProducts;
-                currentListId = -1;
-            }
+            // Chips are static, no dynamic update needed for now
+            // Custom lists could be added as additional chips in the future
         }
 
         private void BindButton(string name, Action action)
@@ -245,6 +283,13 @@ namespace Moruton.BLMConnector
             var panel = root.Q<VisualElement>("queue-list-panel");
             var scroll = root.Q<ScrollView>("queue-list-scroll");
             if (panel == null || scroll == null) return;
+
+            // Toggle: if visible, hide; if hidden, show
+            if (!panel.ClassListContains("blm-detail-hidden"))
+            {
+                panel.AddToClassList("blm-detail-hidden");
+                return;
+            }
 
             scroll.Clear();
             panel.RemoveFromClassList("blm-detail-hidden");
@@ -345,25 +390,38 @@ namespace Moruton.BLMConnector
         {
             var filtered = allProducts.Where(p =>
             {
-                switch (currentFilterType)
+                bool passesFilter = currentFilterType switch
                 {
-                    case FilterType.AllProducts:
-                        return true;
-                    case FilterType.BLMProducts:
-                        return p.sourceType == "BLM";
-                    case FilterType.LocalProducts:
-                        return p.sourceType == "Local";
-                    case FilterType.CustomList:
-                        if (currentListId < 0) return true;
-                        if (p.sourceType != "BLM") return false;
-                        if (!int.TryParse(p.id, out int boothId)) return false;
-                        return listFilterCache.Contains(boothId);
-                    default:
-                        return true;
+                    FilterType.AllProducts => true,
+                    FilterType.BLMProducts => p.sourceType == "BLM",
+                    FilterType.LocalProducts => p.sourceType == "Local",
+                    FilterType.CustomList => currentListId < 0 || (p.sourceType == "BLM" && int.TryParse(p.id, out int boothId) && listFilterCache.Contains(boothId)),
+                    _ => true
+                };
+
+                if (!passesFilter) return false;
+
+                // Search filter
+                if (!string.IsNullOrEmpty(searchText))
+                {
+                    if (!(p.name?.ToLower().Contains(searchText) == true ||
+                          p.shopName?.ToLower().Contains(searchText) == true))
+                        return false;
                 }
+
+                return true;
             }).ToList();
 
-            Debug.Log($"[BLM Standalone] Filtered: {filtered.Count}/{allProducts.Count} products (Filter: {currentFilterType})");
+            // Sort
+            filtered.Sort((a, b) => currentSort switch
+            {
+                SortMode.NameDesc => string.Compare(b.name, a.name, StringComparison.OrdinalIgnoreCase),
+                SortMode.ShopAsc => string.Compare(a.shopName, b.shopName, StringComparison.OrdinalIgnoreCase),
+                _ => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase)
+            });
+
+            filteredProducts = filtered;
+            Debug.Log($"[BLM] Filtered: {filtered.Count}/{allProducts.Count} (Filter: {currentFilterType}, Search: \"{searchText}\", Sort: {currentSort})");
 
             RebuildGrid(filtered);
         }
@@ -380,52 +438,110 @@ namespace Moruton.BLMConnector
             }
         }
 
+        private void SetViewMode(bool listView)
+        {
+            isListView = listView;
+            var gridBtn = root.Q<Button>("grid-view-btn");
+            var listBtn = root.Q<Button>("list-view-btn");
+            if (gridBtn != null) gridBtn.EnableInClassList("blm-icon-btn-active", !listView);
+            if (listBtn != null) listBtn.EnableInClassList("blm-icon-btn-active", listView);
+            RebuildGrid(filteredProducts);
+        }
+
         private void RebuildGrid(List<BoothProduct> products)
         {
             if (gridContainer == null) return;
             gridContainer.Clear();
+            gridContainer.ClearClassList();
 
-            foreach (var product in products)
+            if (isListView)
             {
-                var item = new VisualElement();
-                item.AddToClassList("blm-grid-item");
-                item.RegisterCallback<MouseDownEvent>(evt => OnProductClick(evt, product));
-
-                var thumb = new Image();
-                thumb.AddToClassList("blm-thumbnail");
-                LoadThumbnail(thumb, product);
-
-                var tc = new VisualElement();
-                tc.AddToClassList("blm-thumbnail-container");
-                tc.Add(thumb);
-                item.Add(tc);
-
-                var info = new VisualElement();
-                info.AddToClassList("blm-item-info");
-
-                var nameLabel = new Label(product.name);
-                nameLabel.AddToClassList("blm-item-name");
-                nameLabel.tooltip = product.name;
-
-                var shopLabel = new Label(product.shopName);
-                shopLabel.AddToClassList("blm-item-shop");
-
-                info.Add(nameLabel);
-                info.Add(shopLabel);
-                item.Add(info);
-
-                if (BLMHistory.IsInstalled(product))
-                {
-                    item.AddToClassList("blm-installed");
-                }
-                
-                if (importedProductIds.Contains(product.id))
-                {
-                    item.AddToClassList("blm-batch-imported");
-                }
-
-                gridContainer.Add(item);
+                gridContainer.AddToClassList("blm-list-container");
+                foreach (var product in products)
+                    gridContainer.Add(CreateListItem(product));
             }
+            else
+            {
+                gridContainer.AddToClassList("blm-grid-container");
+                foreach (var product in products)
+                    gridContainer.Add(CreateGridItem(product));
+            }
+        }
+
+        private VisualElement CreateGridItem(BoothProduct product)
+        {
+            var item = new VisualElement();
+            item.AddToClassList("blm-grid-item");
+            item.RegisterCallback<MouseDownEvent>(evt => OnProductClick(evt, product));
+
+            var thumb = new Image();
+            thumb.AddToClassList("blm-thumbnail");
+            LoadThumbnail(thumb, product);
+
+            var tc = new VisualElement();
+            tc.AddToClassList("blm-thumbnail-container");
+            tc.Add(thumb);
+            item.Add(tc);
+
+            var info = new VisualElement();
+            info.AddToClassList("blm-item-info");
+
+            var nameLabel = new Label(product.name);
+            nameLabel.AddToClassList("blm-item-name");
+            nameLabel.tooltip = product.name;
+
+            var shopLabel = new Label(product.shopName);
+            shopLabel.AddToClassList("blm-item-shop");
+
+            info.Add(nameLabel);
+            info.Add(shopLabel);
+            item.Add(info);
+
+            if (BLMHistory.IsInstalled(product))
+                item.AddToClassList("blm-installed");
+            if (importedProductIds.Contains(product.id))
+                item.AddToClassList("blm-batch-imported");
+
+            return item;
+        }
+
+        private VisualElement CreateListItem(BoothProduct product)
+        {
+            var item = new VisualElement();
+            item.AddToClassList("blm-list-item");
+            item.RegisterCallback<MouseDownEvent>(evt => OnProductClick(evt, product));
+
+            var thumb = new Image();
+            thumb.AddToClassList("blm-list-thumb");
+            LoadThumbnail(thumb, product);
+            item.Add(thumb);
+
+            var info = new VisualElement();
+            info.AddToClassList("blm-list-info");
+
+            var nameLabel = new Label(product.name);
+            nameLabel.AddToClassList("blm-list-name");
+
+            var shopLabel = new Label(product.shopName);
+            shopLabel.AddToClassList("blm-list-shop");
+
+            info.Add(nameLabel);
+            info.Add(shopLabel);
+            item.Add(info);
+
+            var meta = new Label(product.sourceType ?? "");
+            meta.AddToClassList("blm-list-meta");
+            item.Add(meta);
+
+            if (BLMHistory.IsInstalled(product))
+                item.style.opacity = 0.5f;
+            if (importedProductIds.Contains(product.id))
+            {
+                item.style.borderBottomColor = new Color(0.29f, 0.62f, 1f);
+                item.style.borderBottomWidth = 2;
+            }
+
+            return item;
         }
 
         private void OnProductClick(MouseDownEvent evt, BoothProduct product)
