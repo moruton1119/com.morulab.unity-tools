@@ -117,10 +117,16 @@
     padding: 8px;
 }
 
+/* ScrollViewの内部コンテナを幅いっぱいに広げる */
+.blm-asset-grid > * {
+    width: 100%;
+}
+
 .blm-grid-container {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
+    width: 100%;
 }
 
 .blm-grid-item {
@@ -131,6 +137,7 @@
     overflow: hidden;
     border-width: 1px;
     border-color: transparent;
+    flex-shrink: 0;
 }
 
 .blm-grid-item:hover {
@@ -291,6 +298,7 @@
     border-top-color: #1a1a1a;
     flex-direction: column;
     padding: 8px 12px;
+    min-height: 70px;
 }
 
 /* Footer Row 1: status + toggle */
