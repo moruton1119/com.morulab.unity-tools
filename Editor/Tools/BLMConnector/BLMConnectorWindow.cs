@@ -103,14 +103,14 @@ namespace Moruton.BLMConnector
             BindButton("process-queue", () => AssetImportQueue.StartImport());
             BindButton("view-queue", ShowQueueList);
             BindButton("reset-queue", () => { AssetImportQueue.ClearQueue(); UpdateQueueStatus(); });
-            BindButton("close-queue-list", () => root.Q<VisualElement>("queue-list-panel")?.AddToClassList("detail-panel-hidden"));
+            BindButton("close-queue-list", () => root.Q<VisualElement>("queue-list-panel")?.AddToClassList("blm-detail-hidden"));
             BindButton("open-local-assets", OpenLocalAssetsFolder);
 
             var hamburger = root.Q<Button>("hamburger-menu");
             var sidebar = root.Q<VisualElement>("sidebar");
             if (hamburger != null && sidebar != null)
             {
-                hamburger.clicked += () => sidebar.ToggleInClassList("sidebar-hidden");
+                hamburger.clicked += () => sidebar.ToggleInClassList("blm-sidebar-hidden");
             }
 
             var toggle = root.Q<Toggle>("interactive-toggle");
@@ -233,7 +233,7 @@ namespace Moruton.BLMConnector
             if (panel == null || scroll == null) return;
 
             scroll.Clear();
-            panel.RemoveFromClassList("detail-panel-hidden");
+            panel.RemoveFromClassList("blm-detail-hidden");
 
             var items = AssetImportQueue.GetQueueItems();
             if (items.Length == 0)
@@ -374,27 +374,27 @@ namespace Moruton.BLMConnector
             foreach (var product in products)
             {
                 var item = new VisualElement();
-                item.AddToClassList("grid-item");
+                item.AddToClassList("blm-grid-item");
                 item.RegisterCallback<MouseDownEvent>(evt => OnProductClick(evt, product));
 
                 var thumb = new Image();
-                thumb.AddToClassList("thumbnail");
+                thumb.AddToClassList("blm-thumbnail");
                 LoadThumbnail(thumb, product);
 
                 var tc = new VisualElement();
-                tc.AddToClassList("thumbnail-container");
+                tc.AddToClassList("blm-thumbnail-container");
                 tc.Add(thumb);
                 item.Add(tc);
 
                 var info = new VisualElement();
-                info.AddToClassList("item-info");
+                info.AddToClassList("blm-item-info");
 
                 var nameLabel = new Label(product.name);
-                nameLabel.AddToClassList("item-name");
+                nameLabel.AddToClassList("blm-item-name");
                 nameLabel.tooltip = product.name;
 
                 var shopLabel = new Label(product.shopName);
-                shopLabel.AddToClassList("item-shop");
+                shopLabel.AddToClassList("blm-item-shop");
 
                 info.Add(nameLabel);
                 info.Add(shopLabel);
@@ -402,12 +402,12 @@ namespace Moruton.BLMConnector
 
                 if (BLMHistory.IsInstalled(product))
                 {
-                    item.AddToClassList("installed");
+                    item.AddToClassList("blm-installed");
                 }
                 
                 if (importedProductIds.Contains(product.id))
                 {
-                    item.AddToClassList("batch-imported");
+                    item.AddToClassList("blm-batch-imported");
                 }
 
                 gridContainer.Add(item);
@@ -512,7 +512,7 @@ namespace Moruton.BLMConnector
             if (detailOverlay == null) return;
             selectedProduct = product;
             selectedPackagePaths.Clear();
-            detailOverlay.RemoveFromClassList("detail-panel-hidden");
+            detailOverlay.RemoveFromClassList("blm-detail-hidden");
 
             var nameLbl = detailPanel.Q<Label>("detail-product-name");
             if (nameLbl != null) nameLbl.text = product.name;
@@ -565,7 +565,7 @@ namespace Moruton.BLMConnector
 
         private void UpdateDetailFooter(BoothProduct product)
         {
-            var footer = detailPanel.Q<VisualElement>(className: "modal-footer");
+            var footer = detailPanel.Q<VisualElement>(className: "blm-modal-footer");
             if (footer == null) return;
 
             footer.Clear();
@@ -596,7 +596,7 @@ namespace Moruton.BLMConnector
             {
                 text = "Add to Queue"
             };
-            addBtn.AddToClassList("import-button");
+            addBtn.AddToClassList("blm-import-button");
             footer.Add(addBtn);
         }
 
@@ -842,7 +842,7 @@ namespace Moruton.BLMConnector
             }
         }
 
-        private void HideDetail() => detailOverlay?.AddToClassList("detail-panel-hidden");
+        private void HideDetail() => detailOverlay?.AddToClassList("blm-detail-hidden");
 
         private void AddSelectedToQueue()
         {
