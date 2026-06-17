@@ -108,8 +108,20 @@ namespace Moruton.BLMConnector
             BindButton("open-folder", () => { if (selectedProduct != null && Directory.Exists(selectedProduct.rootFolderPath)) EditorUtility.RevealInFinder(selectedProduct.rootFolderPath); });
             BindButton("process-queue", () => AssetImportQueue.StartImport());
             BindButton("view-queue", ShowQueueList);
-            BindButton("reset-queue", () => { AssetImportQueue.ClearQueue(); UpdateQueueStatus(); });
+            BindButton("reset-queue", () => {
+                AssetImportQueue.ClearQueue();
+                UpdateQueueStatus();
+                RefreshQueueListDisplay();
+            });
             BindButton("open-local-assets", OpenLocalAssetsFolder);
+
+            // Header local assets button (with tooltip)
+            var localBtn = root.Q<Button>("open-local-assets-header");
+            if (localBtn != null)
+            {
+                localBtn.tooltip = "\u30ed\u30fc\u30ab\u30eb\u30a2\u30bb\u30c3\u30c8\u306f\u3053\u3061\u3089\u306b\u683c\u7d0d\u3057\u3066\u304f\u3060\u3055\u3044";
+                localBtn.clicked += OpenLocalAssetsFolder;
+            }
 
             // Grid / List view toggle
             var gridBtn = root.Q<Button>("grid-view-btn");
@@ -295,6 +307,22 @@ namespace Moruton.BLMConnector
             scroll.Clear();
             panel.RemoveFromClassList("blm-detail-hidden");
 
+            PopulateQueueList(scroll);
+        }
+
+        private void RefreshQueueListDisplay()
+        {
+            var panel = root.Q<VisualElement>("queue-list-panel");
+            var scroll = root.Q<ScrollView>("queue-list-scroll");
+            if (panel == null || scroll == null) return;
+            // Only update if the panel is currently visible
+            if (panel.ClassListContains("blm-detail-hidden")) return;
+            scroll.Clear();
+            PopulateQueueList(scroll);
+        }
+
+        private void PopulateQueueList(ScrollView scroll)
+        {
             var items = AssetImportQueue.GetQueueItems();
             if (items.Length == 0)
             {

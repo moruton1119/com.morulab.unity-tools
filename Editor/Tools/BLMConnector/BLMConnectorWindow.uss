@@ -435,3 +435,19 @@
     margin-left: 8px;
     padding: 4px 12px;
 }
+
+.blm-local-btn {
+    background-color: #2d5a2d;
+    border-width: 1px;
+    border-color: #4a8a4a;
+    border-radius: 4px;
+    color: #aaffaa;
+    padding: 4px 10px;
+    font-size: 11px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.blm-local-btn:hover {
+    background-color: #3a7a3a;
+}
