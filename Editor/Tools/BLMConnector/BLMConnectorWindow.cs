@@ -224,6 +224,20 @@ namespace Moruton.BLMConnector
         {
             RefreshData();
             UpdateQueueStatus();
+
+            // Auto-focus the imported product after a short delay
+            // (delay needed because label assignment happens in OnPostprocessAllAssets
+            //  which may fire slightly after importPackageCompleted)
+            if (selectedProduct != null && !string.IsNullOrEmpty(selectedProduct.id))
+            {
+                string pid = selectedProduct.id;
+                root.schedule.Execute(() =>
+                {
+                    // Wait for AssetDatabase to finish processing labels
+                    AssetDatabase.Refresh();
+                    ShowInProduct(pid);
+                }).ExecuteLater(500); // 500ms delay for label assignment to complete
+            }
         }
 
         private void ShowQueueList()
@@ -602,6 +616,7 @@ namespace Moruton.BLMConnector
 
         private void ShowInProject(string productId)
         {
+            // Try label-based search first
             string[] guids = AssetDatabase.FindAssets($"l:{BLMConstants.LabelPrefix_PID}{productId}");
 
             if (guids.Length > 0)
@@ -618,11 +633,48 @@ namespace Moruton.BLMConnector
                 }
             }
 
-            Debug.LogWarning($"[BLM] No imported folder found for product {productId}");
-            if (selectedProduct != null && Directory.Exists(selectedProduct.rootFolderPath))
+            // Fallback: search by product name in Assets/
+            if (selectedProduct != null)
             {
-                EditorUtility.RevealInFinder(selectedProduct.rootFolderPath);
+                // Try exact folder name match
+                string safeName = SanitizeFolderName(selectedProduct.name);
+                string[] folderGuids = AssetDatabase.FindAssets($"t:DefaultAsset {safeName}");
+                foreach (var fg in folderGuids)
+                {
+                    var p = AssetDatabase.GUIDToAssetPath(fg);
+                    if (p.StartsWith("Assets/") && p.Count(c => c == '/') == 1)
+                    {
+                        var folderObj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(p);
+                        if (folderObj != null)
+                        {
+                            Selection.activeObject = folderObj;
+                            EditorGUIUtility.PingObject(folderObj);
+                            Debug.Log($"[BLM] Focused imported folder (name fallback): {p}");
+                            return;
+                        }
+                    }
+                }
+
+                // Last resort: open in file explorer
+                if (Directory.Exists(selectedProduct.rootFolderPath))
+                {
+                    EditorUtility.RevealInFinder(selectedProduct.rootFolderPath);
+                    return;
+                }
             }
+
+            Debug.LogWarning($"[BLM] Could not locate imported product {productId}");
+        }
+
+        private string SanitizeFolderName(string name)
+        {
+            // Remove common Booth naming artifacts
+            var result = name.Replace("【", "").Replace("】", "").Replace("[", "").Replace("]", "");
+            result = System.Text.RegularExpressions.Regex.Replace(result, @"[\{\}]", "");
+            // Trim and take first 10 chars for broader match
+            result = result.Trim();
+            if (result.Length > 10) result = result.Substring(0, 10);
+            return result;
         }
 
         private void DeleteFromProject(string productId)
