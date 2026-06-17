@@ -12,9 +12,9 @@
             <ui:VisualElement class="blm-header-row">
                 <ui:Label text="BLM Connector" class="blm-title" />
                 <ui:TextField name="search-field" placeholder-text="Search assets..." class="blm-search-bar" />
-                <ui:Button name="grid-view-btn" class="blm-icon-btn blm-icon-btn-active" text="▦" />
-                <ui:Button name="list-view-btn" class="blm-icon-btn" text="☰" />
-                <ui:Button name="refresh-db" class="blm-icon-btn" text="🔄" />
+                <ui:Button name="grid-view-btn" class="blm-icon-btn blm-icon-btn-active" text="Grid" />
+                <ui:Button name="list-view-btn" class="blm-icon-btn" text="List" />
+                <ui:Button name="refresh-db" class="blm-icon-btn" text="Refresh" />
             </ui:VisualElement>
             <!-- Row 2: Filter chips + Sort -->
             <ui:VisualElement class="blm-header-row">
