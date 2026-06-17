@@ -25,15 +25,18 @@
 }
 
 .blm-title {
-    font-size: 15px;
+    font-size: 14px;
     -unity-font-style: bold;
     white-space: nowrap;
-    margin-right: 10px;
+    margin-right: 8px;
     flex-shrink: 0;
 }
 
 .blm-search-bar {
     flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 80px;
+    max-width: 400px;
     background-color: #1e1e1e;
     border-width: 1px;
     border-color: #555;
@@ -55,9 +58,10 @@
     border-radius: 4px;
     color: #ccc;
     padding: 4px 8px;
-    font-size: 14px;
+    font-size: 12px;
     margin-right: 4px;
     flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .blm-icon-btn:hover {
