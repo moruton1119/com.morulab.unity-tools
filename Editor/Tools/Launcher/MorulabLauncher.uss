@@ -259,3 +259,57 @@
     color: #fff;
     background-color: #3f8aff;
 }
+
+/* Update Banner */
+.update-banner {
+    background-color: #1a3a5c;
+    border-bottom: 2px solid #3f8aff;
+    padding: 10px 16px;
+    flex-direction: column;
+}
+
+.update-banner-label {
+    color: #7ab8ff;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.update-banner-btn {
+    background-color: #3f8aff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 16px;
+    margin-right: 6px;
+    font-size: 12px;
+}
+
+.update-banner-btn:hover {
+    background-color: #5a9aff;
+}
+
+.update-banner-btn-secondary {
+    background-color: #333;
+    color: #ccc;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 4px 12px;
+    margin-right: 6px;
+    font-size: 12px;
+}
+
+.update-banner-btn-secondary:hover {
+    background-color: #444;
+}
+
+.update-banner-btn-dismiss {
+    background-color: transparent;
+    color: #888;
+    border: none;
+    font-size: 14px;
+    padding: 4px 8px;
+}
+
+.update-banner-btn-dismiss:hover {
+    color: #fff;
+}

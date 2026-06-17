@@ -2,7 +2,8 @@
     "name": "com.morulab.unity-tools.Editor",
     "rootNamespace": "Morulab.UnityTools.Editor",
     "references": [
-        "com.morulab.unity-tools"
+        "com.morulab.unity-tools",
+        "MorulabTools.UpdateChecker.Editor"
     ],
     "includePlatforms": [
         "Editor"

@@ -5,6 +5,8 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
+using MorulabTools.Core;
 
 namespace MorulabTools.Launcher
 {
@@ -35,6 +37,10 @@ namespace MorulabTools.Launcher
 
         // Cache for loaded tools
         private List<ToolCommandData> _allCommands = new List<ToolCommandData>();
+
+        // Update notification
+        private const string SelfPackageName = "com.morulab.unity-tools";
+        private VisualElement _updateBanner;
 
         private const string PackagePath = "Packages/com.morulab.unity-tools/Editor/Tools/Launcher";
 
@@ -84,6 +90,114 @@ namespace MorulabTools.Launcher
 
             // Initialize
             RefreshToolList();
+
+            // Update check (stable only, exclude beta)
+            CheckForUpdates();
+        }
+
+        private void CheckForUpdates()
+        {
+            // Start background fetch (stable only, includePrerelease = false)
+            PackageUpdateChecker.PrefetchLatestVersion(SelfPackageName);
+
+            // Check cached result (may be null on first call, will show on next refresh)
+            EditorApplication.delayCall += () =>
+            {
+                if (PackageUpdateChecker.IsUpdateAvailable(SelfPackageName, false))
+                {
+                    string latest = PackageUpdateChecker.GetLatestVersionCached(SelfPackageName);
+                    if (!string.IsNullOrEmpty(latest))
+                        ShowUpdateBanner(latest);
+                }
+            };
+
+            // Also poll after a few seconds for the first fetch result
+            EditorApplication.delayCall += async () =>
+            {
+                await Task.Delay(3000);
+                string latest = await PackageUpdateChecker.GetLatestVersionAsync(SelfPackageName, false);
+                string current = PackageUpdateChecker.GetCurrentVersion(SelfPackageName);
+
+                if (!string.IsNullOrEmpty(latest) && !string.IsNullOrEmpty(current))
+                {
+                    if (SemVer.TryParse(latest, out var latVer) && SemVer.TryParse(current, out var curVer))
+                    {
+                        if (!latVer.IsPreRelease && latVer > curVer)
+                        {
+                            ShowUpdateBanner(latest);
+                        }
+                    }
+                }
+            };
+        }
+
+        private void ShowUpdateBanner(string latestVersion)
+        {
+            if (_updateBanner != null) return;
+
+            string currentVersion = PackageUpdateChecker.GetCurrentVersion(SelfPackageName);
+
+            _updateBanner = new VisualElement();
+            _updateBanner.AddToClassList("update-banner");
+
+            var label = new Label($"🆕 Update available: v{currentVersion} → v{latestVersion}");
+            label.AddToClassList("update-banner-label");
+            _updateBanner.Add(label);
+
+            var btnContainer = new VisualElement();
+            btnContainer.style.flexDirection = FlexDirection.Row;
+            btnContainer.style.marginTop = 4;
+
+            var btnUpdate = new Button(() => _ = PerformAutoUpdate(latestVersion))
+            { text = "Auto Update" };
+            btnUpdate.AddToClassList("update-banner-btn");
+            btnContainer.Add(btnUpdate);
+
+            var btnVCC = new Button(() =>
+            {
+                string projectPath = System.IO.Directory.GetCurrentDirectory().Replace("\\", "/");
+                projectPath = Uri.EscapeDataString(projectPath);
+                Application.OpenURL($"vcc://vpm/open?path={projectPath}");
+            })
+            { text = "Open VCC" };
+            btnVCC.AddToClassList("update-banner-btn-secondary");
+            btnContainer.Add(btnVCC);
+
+            var btnDismiss = new Button(() =>
+            {
+                _updateBanner?.RemoveFromHierarchy();
+                _updateBanner = null;
+            })
+            { text = "✕" };
+            btnDismiss.AddToClassList("update-banner-btn-dismiss");
+            btnContainer.Add(btnDismiss);
+
+            _updateBanner.Add(btnContainer);
+
+            // Insert at top of rootVisualElement
+            rootVisualElement.Insert(0, _updateBanner);
+        }
+
+        private async Task PerformAutoUpdate(string targetVersion)
+        {
+            bool success = await PackageUpdateChecker.DownloadAndInstallUpdateAsync(SelfPackageName, targetVersion);
+            if (success)
+            {
+                EditorUtility.DisplayDialog("Update Complete! 🎉",
+                    $"Morulab Unity Tools has been updated to v{targetVersion}!\n\n" +
+                    "Please restart Unity for changes to take full effect.",
+                    "OK");
+
+                _updateBanner?.RemoveFromHierarchy();
+                _updateBanner = null;
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Update Failed",
+                    $"Failed to update to v{targetVersion}.\nCheck the console for details.\n\n" +
+                    "You can try updating via VCC instead.",
+                    "OK");
+            }
         }
 
         private void SetLanguage(string lang)
