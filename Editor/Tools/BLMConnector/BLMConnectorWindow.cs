@@ -109,6 +109,7 @@ namespace Moruton.BLMConnector
             BindButton("process-queue", () => AssetImportQueue.StartImport());
             BindButton("view-queue", ShowQueueList);
             BindButton("reset-queue", () => { AssetImportQueue.ClearQueue(); UpdateQueueStatus(); });
+            BindButton("open-local-assets", OpenLocalAssetsFolder);
 
             // Grid / List view toggle
             var gridBtn = root.Q<Button>("grid-view-btn");
@@ -641,7 +642,7 @@ namespace Moruton.BLMConnector
         {
             if (detailOverlay == null) return;
             selectedProduct = product;
-            selectedPackagePaths.Clear();
+            selectedPackagePaths.Clear(); // Clear only on fresh open
             detailOverlay.RemoveFromClassList("blm-detail-hidden");
 
             var nameLbl = detailPanel.Q<Label>("detail-product-name");
@@ -921,6 +922,7 @@ namespace Moruton.BLMConnector
                 assetRow.style.paddingLeft = 10;
 
                 var toggle = new Toggle { text = asset.fileName, value = selectedPackagePaths.Contains(asset.fullPath) };
+                toggle.userData = asset.fullPath;
                 toggle.style.flexGrow = 1;
                 toggle.RegisterValueChangedCallback(evt =>
                 {
@@ -948,10 +950,22 @@ namespace Moruton.BLMConnector
 
         private void RefreshDetailPanel()
         {
-            if (selectedProduct != null)
+            if (selectedProduct == null || detailPanel == null) return;
+
+            // Only update toggle states without rebuilding the whole panel
+            var toggles = detailPanel.Query<Toggle>().ToList();
+            foreach (var toggle in toggles)
             {
-                ShowDetail(selectedProduct);
+                // The toggle's userData should contain the asset path
+                if (toggle.userData is string path)
+                {
+                    // Temporarily disable callback to avoid feedback loop
+                    var previousValue = toggle.value;
+                    toggle.SetValueWithoutNotify(selectedPackagePaths.Contains(path));
+                }
             }
+
+            UpdateDetailFooter(selectedProduct);
         }
 
         private void ImportAsset(BoothAsset asset, BoothProduct product)
