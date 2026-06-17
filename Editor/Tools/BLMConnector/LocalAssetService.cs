@@ -29,7 +29,7 @@ namespace Moruton.BLMConnector
             try
             {
                 var folders = Directory.GetDirectories(localAssetsPath);
-                Debug.Log($"[BLM Standalone] Scanning {folders.Length} folders in LocalAssets...");
+                // Debug.Log suppressed for performance
 
                 foreach (var folder in folders)
                 {
@@ -44,27 +44,21 @@ namespace Moruton.BLMConnector
                         assets = new List<BoothAsset>()
                     };
 
-                    var rootFiles = Directory.GetFiles(folder, "*.*", SearchOption.TopDirectoryOnly);
-
-                    foreach (var file in rootFiles)
-                    {
-                        string ext = Path.GetExtension(file).ToLower();
-                        if (AssetTypeUtils.IsImageFile(ext))
-                        {
-                            product.thumbnailPath = file;
-                            Debug.Log($"[BLM Standalone] Found thumbnail for {product.name}: {Path.GetFileName(file)}");
-                            break;
-                        }
-                    }
-
                     var allFiles = Directory.GetFiles(folder, "*.*", SearchOption.AllDirectories);
 
+                    // 1回の走査でサムネイル + アセット両方取得
                     foreach (var file in allFiles)
                     {
                         string ext = Path.GetExtension(file).ToLower();
                         string fileName = Path.GetFileName(file);
 
                         if (ext == ".blend") continue;
+
+                        // サムネイルは最初の画像ファイル
+                        if (product.thumbnailPath == null && AssetTypeUtils.IsImageFile(ext))
+                        {
+                            product.thumbnailPath = file;
+                        }
 
                         if (ext == ".unitypackage")
                         {
@@ -97,15 +91,15 @@ namespace Moruton.BLMConnector
                     if (product.packages.Count > 0)
                     {
                         products.Add(product);
-                        Debug.Log($"[BLM Standalone] Loaded local asset: {product.name} ({product.packages.Count} packages, {product.assets.Count} total assets)");
+                        // Debug.Log suppressed for performance
                     }
                     else
                     {
-                        Debug.LogWarning($"[BLM Standalone] Skipping folder (no .unitypackage found): {product.name}");
+                        // Debug.Log suppressed for performance
                     }
                 }
 
-                Debug.Log($"[BLM Standalone] Successfully loaded {products.Count} local assets.");
+                // Debug.Log suppressed for performance
             }
             catch (Exception ex)
             {

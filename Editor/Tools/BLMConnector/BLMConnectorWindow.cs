@@ -72,7 +72,6 @@ namespace Moruton.BLMConnector
 
         public VisualElement CreateUI()
         {
-            Debug.Log("[BLM Standalone] App CreateUI Started");
 
             var uxml = LoadAsset<VisualTreeAsset>("BLMConnectorWindow.uxml");
             var uss = LoadAsset<StyleSheet>("BLMConnectorWindow.uss");
@@ -168,9 +167,6 @@ namespace Moruton.BLMConnector
                 toggle.RegisterValueChangedCallback(evt => AssetImportQueue.InteractiveMode = evt.newValue);
             }
 
-            // Setup filter dropdown (kept for compatibility)
-            SetupFilterChips();
-
             root.RegisterCallback<AttachToPanelEvent>(OnAttach);
             root.RegisterCallback<DetachFromPanelEvent>(OnDetach);
 
@@ -210,42 +206,9 @@ namespace Moruton.BLMConnector
             }
         }
 
-        private void OnFilterChanged(string selectedValue)
-        {
-            if (selectedValue == "All Products" || selectedValue == "All")
-            {
-                currentFilterType = FilterType.AllProducts;
-                currentListId = -1;
-            }
-            else if (selectedValue == "BLM Products" || selectedValue == "BLM")
-            {
-                currentFilterType = FilterType.BLMProducts;
-                currentListId = -1;
-            }
-            else if (selectedValue == "Local Products" || selectedValue == "Local")
-            {
-                currentFilterType = FilterType.LocalProducts;
-                currentListId = -1;
-            }
-            else if (selectedValue.StartsWith("📋 "))
-            {
-                currentFilterType = FilterType.CustomList;
-                var listTitle = selectedValue.Substring(2).Trim();
-                var list = availableLists.FirstOrDefault(l => l.title == listTitle);
-                if (list != null)
-                {
-                    currentListId = list.id;
-                    UpdateListFilterCache();
-                }
-            }
-
-            ApplyFilters();
-        }
-
         private void UpdateFilterDropdownChoices()
         {
-            // Chips are static, no dynamic update needed for now
-            // Custom lists could be added as additional chips in the future
+            // Chips are static, no dynamic update needed
         }
 
         private void BindButton(string name, Action action)
@@ -341,7 +304,7 @@ namespace Moruton.BLMConnector
         private void RefreshData()
         {
             importedProductIds.Clear();
-            BLMHistory.Refresh();
+            BLMHistory.Refresh(); // Only called on explicit refresh / import completion
 
             string dbPath = BLMDatabaseService.GetDefaultDbPath();
 
@@ -361,8 +324,7 @@ namespace Moruton.BLMConnector
             allProducts.AddRange(blmProducts);
             allProducts.AddRange(localProducts);
 
-            Debug.Log($"[BLM Standalone] Loaded {blmProducts.Count} BLM products + {localProducts.Count} local products = {allProducts.Count} total");
-
+            // Debug.Log suppressed for performance
             ApplyFilters();
         }
 
@@ -450,7 +412,6 @@ namespace Moruton.BLMConnector
             });
 
             filteredProducts = filtered;
-            Debug.Log($"[BLM] Filtered: {filtered.Count}/{allProducts.Count} (Filter: {currentFilterType}, Search: \"{searchText}\", Sort: {currentSort})");
 
             RebuildGrid(filtered);
         }
@@ -613,6 +574,8 @@ namespace Moruton.BLMConnector
             }
         }
 
+        private static bool thumbnailCacheDirChecked = false;
+
         private void LoadThumbnail(Image img, BoothProduct product)
         {
             if (!string.IsNullOrEmpty(product.thumbnailPath) && File.Exists(product.thumbnailPath))
@@ -633,7 +596,11 @@ namespace Moruton.BLMConnector
             }
 
             string cacheDir = BLMConstants.ThumbnailCacheDir;
-            if (!Directory.Exists(cacheDir)) Directory.CreateDirectory(cacheDir);
+            if (!thumbnailCacheDirChecked)
+            {
+                if (!Directory.Exists(cacheDir)) Directory.CreateDirectory(cacheDir);
+                thumbnailCacheDirChecked = true;
+            }
 
             string cachePath = $"{cacheDir}/{product.id}.png";
             if (File.Exists(cachePath))
@@ -687,6 +654,13 @@ namespace Moruton.BLMConnector
             var list = detailPanel.Q<ScrollView>("package-list");
             if (list == null) return;
             list.Clear();
+
+            // Lazy load assets on first open
+            if (product.assets == null)
+            {
+                product.assets = BLMDatabaseService.FindProductAssets(product.id, product.rootFolderPath);
+                product.packages = BLMDatabaseService.FindProductPackages(product.id, product.rootFolderPath);
+            }
 
             UpdateDetailFooter(product);
 
@@ -1030,30 +1004,6 @@ namespace Moruton.BLMConnector
                 {
                     AssetImportQueue.EndManualImport();
                 }
-            }
-        }
-
-        private void ImportAllAssets(List<BoothAsset> assets, BoothProduct product)
-        {
-            AssetImportQueue.StartManualImport(product.id);
-            try
-            {
-                foreach (var asset in assets)
-                {
-                    BLMAssetImporter.ImportAsset(asset, product.name);
-                }
-                importedProductIds.Add(product.id);
-                Debug.Log($"[BLM] Successfully imported {assets.Count} assets");
-                ApplyFilters();
-                UpdateDetailFooter(product);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[BLM] Failed to import assets: {ex.Message}");
-            }
-            finally
-            {
-                AssetImportQueue.EndManualImport();
             }
         }
 

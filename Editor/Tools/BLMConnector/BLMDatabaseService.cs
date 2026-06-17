@@ -55,7 +55,7 @@ namespace Moruton.BLMConnector
                         Debug.LogWarning("[BLM Standalone] Could not find library root in database preferences.");
                     }
 
-                    Debug.Log($"[BLM Standalone] Library Root: {currentLibraryRoot}");
+                    // Debug.Log suppressed for performance
 
                     // 2. Get Products
                     using (var cmd = connection.CreateCommand())
@@ -102,14 +102,14 @@ namespace Moruton.BLMConnector
                                 if (File.Exists(png)) p.thumbnailPath = png;
                                 else if (File.Exists(jpg)) p.thumbnailPath = jpg;
 
-                                // アセットを読み込む
-                                p.assets = FindProductAssets(p.id, productPath);
+                                // アセットは遅延読み込み（詳細パネル表示時）
+                                p.assets = null;
 
                                 products.Add(p);
                             }
                         }
                     }
-                    Debug.Log($"[BLM Standalone] Successfully loaded {products.Count} products.");
+                    Debug.Log($"[BLM] Loaded {products.Count} products from DB");
                 }
             }
             catch (Exception ex)
@@ -138,24 +138,23 @@ namespace Moruton.BLMConnector
                         // BLOB型の場合はbyte[]としてデコード
                         if (result is byte[] bytes)
                         {
-                            Debug.Log($"[BLM Debug] BLOB byte length: {bytes.Length}");
-                            Debug.Log($"[BLM Debug] BLOB hex: {BitConverter.ToString(bytes)}");
+                            // Debug.Log suppressed for performance
                             
                             // UTF-16 LE (Little Endian) でデコード - BLMはこの形式を使用
                             path = System.Text.Encoding.Unicode.GetString(bytes);
-                            Debug.Log($"[BLM Debug] UTF-16 decoded: {path}");
+                            // Debug.Log suppressed for performance
                             
                             // もしUTF-16で正しく取得できない場合、UTF-8を試す
                             if (string.IsNullOrEmpty(path) || path.Length < 3)
                             {
                                 path = System.Text.Encoding.UTF8.GetString(bytes);
-                                Debug.Log($"[BLM Debug] UTF-8 decoded: {path}");
+                                // Debug.Log suppressed for performance
                             }
                         }
                         else
                         {
                             path = result.ToString();
-                            Debug.Log($"[BLM Debug] Found item_directory_path (TEXT): {path}");
+                            // Debug.Log suppressed for performance
                         }
                         
                         return path;
@@ -303,7 +302,7 @@ namespace Moruton.BLMConnector
                         }
                     }
                 }
-                Debug.Log($"[BLM Standalone] Loaded {lists.Count} lists.");
+                // Debug.Log suppressed for performance
             }
             catch (Exception ex)
             {
@@ -347,7 +346,7 @@ namespace Moruton.BLMConnector
                         }
                     }
                 }
-                Debug.Log($"[BLM Standalone] Loaded {boothIds.Count} items for list {listId}");
+                // Debug.Log suppressed for performance
             }
             catch (Exception ex)
             {

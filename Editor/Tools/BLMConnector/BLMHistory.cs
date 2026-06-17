@@ -11,6 +11,8 @@ namespace Moruton.BLMConnector
     {
         private static HashSet<string> installedIds = new HashSet<string>();
         private static bool isLoaded = false;
+        private static double lastRefreshTime = 0;
+        private const double CACHE_TTL_SECONDS = 5;
 
         public static void Refresh()
         {
@@ -35,6 +37,7 @@ namespace Moruton.BLMConnector
             }
 
             isLoaded = true;
+            lastRefreshTime = EditorApplication.timeSinceStartup;
         }
 
         public static void Load()
@@ -53,7 +56,9 @@ namespace Moruton.BLMConnector
 
         public static void MarkAsInstalled(string productId)
         {
-            Refresh();
+            // Add directly to cache instead of full Refresh()
+            if (!string.IsNullOrEmpty(productId))
+                installedIds.Add(productId);
         }
 
         public static void Unmark(string productId)
