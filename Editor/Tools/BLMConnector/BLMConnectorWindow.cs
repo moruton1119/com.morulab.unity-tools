@@ -330,7 +330,12 @@ namespace Moruton.BLMConnector
 
         private void EnsureLocalAssetsFolderExists()
         {
-            if (string.IsNullOrEmpty(BLMDatabaseService.LibraryRoot)) return;
+            GetOrCreateLocalAssetsFolder();
+        }
+
+        private static string GetOrCreateLocalAssetsFolder()
+        {
+            if (string.IsNullOrEmpty(BLMDatabaseService.LibraryRoot)) return null;
 
             string localAssetsPath = Path.Combine(BLMDatabaseService.LibraryRoot, BLMConstants.LocalAssetsFolderName);
             if (!Directory.Exists(localAssetsPath))
@@ -338,48 +343,33 @@ namespace Moruton.BLMConnector
                 try
                 {
                     Directory.CreateDirectory(localAssetsPath);
-                    Debug.Log($"[BLM Standalone] Created LocalAssets folder at: {localAssetsPath}");
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"[BLM Standalone] Failed to create LocalAssets folder: {ex.Message}");
+                    Debug.LogError($"[BLM] Failed to create LocalAssets folder: {ex.Message}");
+                    return null;
                 }
             }
+            return localAssetsPath;
         }
 
         private void OpenLocalAssetsFolder()
         {
-            if (string.IsNullOrEmpty(BLMDatabaseService.LibraryRoot))
+            string localAssetsPath = GetOrCreateLocalAssetsFolder();
+            if (localAssetsPath == null)
             {
                 EditorUtility.DisplayDialog("Error", "BLM Library Root not found. Please ensure BOOTH Library Manager is configured.", "OK");
                 return;
             }
 
-            string localAssetsPath = Path.Combine(BLMDatabaseService.LibraryRoot, BLMConstants.LocalAssetsFolderName);
-
-            // Create folder if it doesn't exist
-            if (!Directory.Exists(localAssetsPath))
-            {
-                try
-                {
-                    Directory.CreateDirectory(localAssetsPath);
-                    Debug.Log($"[BLM Standalone] Created LocalAssets folder at: {localAssetsPath}");
-                }
-                catch (Exception ex)
-                {
-                    EditorUtility.DisplayDialog("Error", $"Failed to create LocalAssets folder: {ex.Message}", "OK");
-                    return;
-                }
-            }
-
-            // Open in file explorer
             EditorUtility.RevealInFinder(localAssetsPath);
-            Debug.Log($"[BLM Standalone] Opened LocalAssets folder: {localAssetsPath}");
         }
 
         private void ApplyFilters()
         {
-            var filtered = allProducts.Where(p =>
+            // Single-pass filter + collect
+            var filtered = new List<BoothProduct>(allProducts.Count);
+            foreach (var p in allProducts)
             {
                 bool passesFilter = currentFilterType switch
                 {
@@ -390,26 +380,32 @@ namespace Moruton.BLMConnector
                     _ => true
                 };
 
-                if (!passesFilter) return false;
+                if (!passesFilter) continue;
 
                 // Search filter
                 if (!string.IsNullOrEmpty(searchText))
                 {
-                    if (!(p.name?.ToLower().Contains(searchText) == true ||
-                          p.shopName?.ToLower().Contains(searchText) == true))
-                        return false;
+                    if ((p.name == null || !p.name.ToLower().Contains(searchText)) &&
+                        (p.shopName == null || !p.shopName.ToLower().Contains(searchText)))
+                        continue;
                 }
 
-                return true;
-            }).ToList();
+                filtered.Add(p);
+            }
 
-            // Sort
-            filtered.Sort((a, b) => currentSort switch
+            // Sort in-place
+            switch (currentSort)
             {
-                SortMode.NameDesc => string.Compare(b.name, a.name, StringComparison.OrdinalIgnoreCase),
-                SortMode.ShopAsc => string.Compare(a.shopName, b.shopName, StringComparison.OrdinalIgnoreCase),
-                _ => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase)
-            });
+                case SortMode.NameDesc:
+                    filtered.Sort((a, b) => string.Compare(b.name, a.name, StringComparison.OrdinalIgnoreCase));
+                    break;
+                case SortMode.ShopAsc:
+                    filtered.Sort((a, b) => string.Compare(a.shopName, b.shopName, StringComparison.OrdinalIgnoreCase));
+                    break;
+                default:
+                    filtered.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
+                    break;
+            }
 
             filteredProducts = filtered;
 
@@ -441,20 +437,107 @@ namespace Moruton.BLMConnector
         private void RebuildGrid(List<BoothProduct> products)
         {
             if (gridContainer == null) return;
-            gridContainer.Clear();
-            gridContainer.ClearClassList();
 
+            // Build a lookup of what's currently displayed
+            var existing = new Dictionary<string, VisualElement>();
+            for (int i = gridContainer.childCount - 1; i >= 0; i--)
+            {
+                var child = gridContainer[i];
+                var tag = child.userData as BoothProduct;
+                if (tag != null)
+                    existing[tag.id] = child;
+                else
+                    gridContainer.RemoveAt(i);
+            }
+
+            // Determine which products need to be shown
+            var newIds = new HashSet<string>(products.Count);
+            foreach (var p in products) newIds.Add(p.id);
+
+            // Remove elements that are no longer in the filtered set
+            var toRemove = new List<string>();
+            foreach (var kv in existing)
+            {
+                if (!newIds.Contains(kv.Key))
+                    toRemove.Add(kv.Key);
+            }
+            foreach (var id in toRemove)
+            {
+                gridContainer.Remove(existing[id]);
+                existing.Remove(id);
+            }
+
+            // Re-add correct class if view mode changed
+            gridContainer.ClearClassList();
             if (isListView)
             {
                 gridContainer.AddToClassList("blm-list-container");
+
+                // Rebuild all items if switching from grid (different structure)
+                bool needsFullRebuild = false;
+                foreach (var child in gridContainer.Children())
+                {
+                    if (!child.ClassListContains("blm-list-item")) { needsFullRebuild = true; break; }
+                }
+                if (needsFullRebuild)
+                {
+                    gridContainer.Clear();
+                    foreach (var product in products)
+                        gridContainer.Add(CreateListItem(product));
+                    return;
+                }
+
+                // Reorder existing items
                 foreach (var product in products)
-                    gridContainer.Add(CreateListItem(product));
+                {
+                    if (existing.TryGetValue(product.id, out var elem))
+                    {
+                        gridContainer.Add(elem); // Move to end (reorder)
+                    }
+                    else
+                    {
+                        var newItem = CreateListItem(product);
+                        newItem.userData = product;
+                        gridContainer.Add(newItem);
+                    }
+                }
             }
             else
             {
                 gridContainer.AddToClassList("blm-grid-container");
+
+                // Rebuild all items if switching from list (different structure)
+                bool needsFullRebuild = false;
+                foreach (var child in gridContainer.Children())
+                {
+                    if (!child.ClassListContains("blm-grid-item")) { needsFullRebuild = true; break; }
+                }
+                if (needsFullRebuild)
+                {
+                    gridContainer.Clear();
+                    foreach (var product in products)
+                    {
+                        var item = CreateGridItem(product);
+                        item.userData = product;
+                        gridContainer.Add(item);
+                    }
+                    return;
+                }
+
+                // Reorder existing items
                 foreach (var product in products)
-                    gridContainer.Add(CreateGridItem(product));
+                {
+                    if (existing.TryGetValue(product.id, out var elem))
+                    {
+                        gridContainer.Add(elem); // Move to end (reorder)
+                    }
+                    else
+                    {
+                        var newItem = CreateGridItem(product);
+                        newItem.userData = product;
+                        gridContainer.Add(newItem);
+                    }
+                }
             }
         }
 
@@ -462,6 +545,7 @@ namespace Moruton.BLMConnector
         {
             var item = new VisualElement();
             item.AddToClassList("blm-grid-item");
+            item.userData = product;
             item.RegisterCallback<MouseDownEvent>(evt => OnProductClick(evt, product));
 
             var thumb = new Image();
@@ -499,6 +583,7 @@ namespace Moruton.BLMConnector
         {
             var item = new VisualElement();
             item.AddToClassList("blm-list-item");
+            item.userData = product;
             item.RegisterCallback<MouseDownEvent>(evt => OnProductClick(evt, product));
 
             var thumb = new Image();
@@ -874,24 +959,14 @@ namespace Moruton.BLMConnector
         private void AddAssetZone(VisualElement parent, string zoneName, List<BoothAsset> assets, BoothProduct product)
         {
             var zone = new VisualElement();
-            zone.style.marginBottom = 15;
-            zone.style.paddingBottom = 10;
-            zone.style.paddingTop = 10;
-            zone.style.paddingLeft = 10;
-            zone.style.paddingRight = 10;
-            zone.style.backgroundColor = new Color(0.2f, 0.2f, 0.2f, 0.3f);
-            zone.style.borderBottomLeftRadius = 5;
-            zone.style.borderBottomRightRadius = 5;
-            zone.style.borderTopLeftRadius = 5;
-            zone.style.borderTopRightRadius = 5;
+            zone.AddToClassList("blm-asset-zone");
+
 
             var headerRow = new VisualElement();
-            headerRow.style.flexDirection = FlexDirection.Row;
-            headerRow.style.justifyContent = Justify.SpaceBetween;
-            headerRow.style.marginBottom = 8;
+            headerRow.AddToClassList("blm-asset-zone-header");
 
             var zoneHeader = new Label($"─ {zoneName} ({assets.Count}) ─");
-            zoneHeader.style.unityFontStyleAndWeight = FontStyle.Bold;
+            zoneHeader.AddToClassList("blm-asset-zone-title");
             headerRow.Add(zoneHeader);
 
             if (assets.Count > 1)
@@ -905,7 +980,7 @@ namespace Moruton.BLMConnector
                     }
                     RefreshDetailPanel();
                 }) { text = "Select All" };
-                selectAllBtn.style.width = 70;
+                selectAllBtn.AddToClassList("blm-asset-select-btn");
                 headerRow.Add(selectAllBtn);
 
                 var deselectAllBtn = new Button(() =>
@@ -914,7 +989,7 @@ namespace Moruton.BLMConnector
                         selectedPackagePaths.Remove(asset.fullPath);
                     RefreshDetailPanel();
                 }) { text = "Deselect" };
-                deselectAllBtn.style.width = 70;
+                deselectAllBtn.AddToClassList("blm-asset-select-btn");
                 headerRow.Add(deselectAllBtn);
             }
 
@@ -923,10 +998,7 @@ namespace Moruton.BLMConnector
             foreach (var asset in assets)
             {
                 var assetRow = new VisualElement();
-                assetRow.style.flexDirection = FlexDirection.Row;
-                assetRow.style.justifyContent = Justify.SpaceBetween;
-                assetRow.style.marginBottom = 5;
-                assetRow.style.paddingLeft = 10;
+                assetRow.AddToClassList("blm-asset-row");
 
                 var toggle = new Toggle { text = asset.fileName, value = selectedPackagePaths.Contains(asset.fullPath) };
                 toggle.userData = asset.fullPath;
@@ -945,7 +1017,7 @@ namespace Moruton.BLMConnector
                 });
 
                 var importBtn = new Button(() => ImportAsset(asset, product)) { text = "Import" };
-                importBtn.style.width = 80;
+                importBtn.AddToClassList("blm-asset-import-btn");
 
                 assetRow.Add(toggle);
                 assetRow.Add(importBtn);
