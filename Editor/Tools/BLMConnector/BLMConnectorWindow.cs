@@ -442,7 +442,7 @@ namespace Moruton.BLMConnector
             var existing = new Dictionary<string, VisualElement>();
             for (int i = gridContainer.childCount - 1; i >= 0; i--)
             {
-                var child = gridContainer[i];
+                var child = gridContainer.ElementAt(i);
                 var tag = child.userData as BoothProduct;
                 if (tag != null)
                     existing[tag.id] = child;
