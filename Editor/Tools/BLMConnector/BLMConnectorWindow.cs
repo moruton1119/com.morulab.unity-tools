@@ -65,6 +65,7 @@ namespace Moruton.BLMConnector
         private int currentListId = -1;
         private bool isListView = false;
         private string searchText = "";
+        private int searchDebounceVersion = 0;
 
         private DropdownField sortDropdown;
         private enum SortMode { NameAsc, NameDesc, ShopAsc }
@@ -135,7 +136,14 @@ namespace Moruton.BLMConnector
                 searchField.RegisterValueChangedCallback(evt =>
                 {
                     searchText = evt.newValue?.ToLower() ?? "";
-                    ApplyFilters();
+                    int version = ++searchDebounceVersion;
+
+                    // デバウンス: 300ms間入力がなければ検索実行
+                    searchField.schedule.Execute(() =>
+                    {
+                        if (version == searchDebounceVersion)
+                            ApplyFilters();
+                    }).StartingIn(300);
                 });
             }
 
